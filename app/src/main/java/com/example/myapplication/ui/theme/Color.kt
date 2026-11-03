@@ -2,10 +2,20 @@ package com.example.myapplication.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
+// Cypher brand palette; keep in sync with res/values/colors.xml
+val Ink = Color(0xFF14141A)
+val Blaze = Color(0xFFFF5A1F)
+val Gold = Color(0xFFFFC23D)
+val Chalk = Color(0xFFF4F1EA)
 
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+// Dark scheme supporting tones
+val InkRaised = Color(0xFF1E1E26)
+val InkHigh = Color(0xFF2A2A34)
+val ChalkMuted = Color(0xFFB9B5AC)
+
+// Light scheme tones, darkened so text on them stays readable
+val BlazeDeep = Color(0xFFC2410C)
+val GoldDeep = Color(0xFF8A5A00)
+val ChalkRaised = Color(0xFFFFFCF6)
+val ChalkHigh = Color(0xFFE7E2D8)
+val InkMuted = Color(0xFF55525C)
