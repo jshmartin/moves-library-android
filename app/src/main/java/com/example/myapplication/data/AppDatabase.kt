@@ -35,6 +35,7 @@ import com.example.myapplication.data.model.VideoClip
         Routine::class,
         RoutineDrill::class,
         PracticeSession::class,
+        Video::class,
     ],
     version = 1,
 )
@@ -42,6 +43,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun libraryDao(): LibraryDao
     abstract fun chainDao(): ChainDao
     abstract fun practiceDao(): PracticeDao
+    abstract fun videoDao(): VideoDao
 
     companion object {
         /** Categories created on first launch. The user can rename, reorder or delete them. */

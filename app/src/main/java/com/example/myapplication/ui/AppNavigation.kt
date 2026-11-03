@@ -8,6 +8,7 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -25,9 +26,11 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.myapplication.ui.library.LibraryRoutes
 import com.example.myapplication.ui.library.libraryGraph
+import com.example.myapplication.ui.videos.VideoLibraryScreen
 
 private enum class TopLevelDestination(val route: String, val label: String, val icon: ImageVector) {
     Library(LibraryRoutes.GRAPH, "Library", Icons.Filled.Home),
+    Videos("videos", "Videos", Icons.Filled.Star),
     Sets("sets", "Sets", Icons.AutoMirrored.Filled.List),
     Rounds("rounds", "Rounds", Icons.Filled.PlayArrow),
     Routines("routines", "Routines", Icons.Filled.DateRange),
@@ -68,6 +71,9 @@ fun AppNavigation() {
             modifier = Modifier.padding(innerPadding),
         ) {
             libraryGraph(navController)
+            composable(TopLevelDestination.Videos.route) {
+                VideoLibraryScreen()
+            }
             composable(TopLevelDestination.Sets.route) {
                 PlaceholderScreen("Sets: chain moves from your library into combos.")
             }
