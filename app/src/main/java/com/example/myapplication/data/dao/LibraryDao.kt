@@ -9,6 +9,7 @@ import com.example.myapplication.data.model.Category
 import com.example.myapplication.data.model.CategoryScore
 import com.example.myapplication.data.model.Move
 import com.example.myapplication.data.model.MoveRating
+import com.example.myapplication.data.model.MoveWithScore
 import com.example.myapplication.data.model.VideoClip
 import kotlinx.coroutines.flow.Flow
 
@@ -17,11 +18,17 @@ interface LibraryDao {
     @Query("SELECT * FROM categories ORDER BY sortOrder, name")
     fun observeCategories(): Flow<List<Category>>
 
+    @Query("SELECT * FROM categories WHERE id = :id")
+    fun observeCategory(id: Long): Flow<Category?>
+
     @Insert
     suspend fun insertCategory(category: Category): Long
 
     @Update
     suspend fun updateCategory(category: Category)
+
+    @Update
+    suspend fun updateCategories(categories: List<Category>)
 
     @Delete
     suspend fun deleteCategory(category: Category)
@@ -31,6 +38,27 @@ interface LibraryDao {
 
     @Query("SELECT * FROM moves WHERE categoryId = :categoryId ORDER BY name")
     fun observeMovesInCategory(categoryId: Long): Flow<List<Move>>
+
+    /** Moves in a category, each with its latest rating (null when unrated). */
+    @Query(
+        """
+        SELECT m.*,
+               (SELECT r.score FROM move_ratings r
+                WHERE r.moveId = m.id
+                ORDER BY r.ratedAt DESC, r.id DESC
+                LIMIT 1) AS latestScore
+        FROM moves m
+        WHERE m.categoryId = :categoryId
+        ORDER BY m.name COLLATE NOCASE
+        """
+    )
+    fun observeMovesWithScore(categoryId: Long): Flow<List<MoveWithScore>>
+
+    @Query("SELECT * FROM moves WHERE parentMoveId = :moveId ORDER BY name COLLATE NOCASE")
+    fun observeVariations(moveId: Long): Flow<List<Move>>
+
+    @Query("SELECT * FROM moves WHERE id = :id")
+    fun observeMove(id: Long): Flow<Move?>
 
     @Query("SELECT * FROM moves WHERE id = :id")
     suspend fun getMove(id: Long): Move?

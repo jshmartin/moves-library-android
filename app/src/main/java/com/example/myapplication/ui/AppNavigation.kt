@@ -1,5 +1,6 @@
 package com.example.myapplication.ui
 
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -22,10 +23,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.myapplication.ui.library.LibraryScreen
+import com.example.myapplication.ui.library.LibraryRoutes
+import com.example.myapplication.ui.library.libraryGraph
 
 private enum class TopLevelDestination(val route: String, val label: String, val icon: ImageVector) {
-    Library("library", "Library", Icons.Filled.Home),
+    Library(LibraryRoutes.GRAPH, "Library", Icons.Filled.Home),
     Sets("sets", "Sets", Icons.AutoMirrored.Filled.List),
     Rounds("rounds", "Rounds", Icons.Filled.PlayArrow),
     Routines("routines", "Routines", Icons.Filled.DateRange),
@@ -37,8 +39,10 @@ fun AppNavigation() {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
 
+    // Each screen's own top bar handles the status bar inset; the bottom bar handles the rest.
     Scaffold(
         modifier = Modifier.fillMaxSize(),
+        contentWindowInsets = WindowInsets(0),
         bottomBar = {
             NavigationBar {
                 TopLevelDestination.entries.forEach { destination ->
@@ -63,7 +67,7 @@ fun AppNavigation() {
             startDestination = TopLevelDestination.Library.route,
             modifier = Modifier.padding(innerPadding),
         ) {
-            composable(TopLevelDestination.Library.route) { LibraryScreen() }
+            libraryGraph(navController)
             composable(TopLevelDestination.Sets.route) {
                 PlaceholderScreen("Sets: chain moves from your library into combos.")
             }

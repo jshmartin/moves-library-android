@@ -1,5 +1,6 @@
 package com.example.myapplication.data.model
 
+import androidx.room.Embedded
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -108,6 +109,12 @@ data class VideoClip(
     val moveId: Long? = null,
     val setId: Long? = null,
     val createdAt: Long = System.currentTimeMillis(),
+)
+
+/** A move with its latest rating (null when unrated). */
+data class MoveWithScore(
+    @Embedded val move: Move,
+    val latestScore: Int?,
 )
 
 /** A category with the average of its moves' latest ratings (null when nothing is rated). */

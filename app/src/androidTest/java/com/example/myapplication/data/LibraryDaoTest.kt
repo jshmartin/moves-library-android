@@ -56,4 +56,21 @@ class LibraryDaoTest {
         assertNull(powerScore.averageScore)
         assertEquals(0, powerScore.totalMoves)
     }
+
+    @Test
+    fun movesWithScoreCarryLatestRating() = runBlocking {
+        val dao = db.libraryDao()
+        val freezes = dao.insertCategory(Category(name = "Freezes"))
+        val chair = dao.insertMove(Move(name = "Chair freeze", categoryId = freezes))
+        dao.insertMove(Move(name = "baby freeze", categoryId = freezes))
+        dao.insertRating(MoveRating(moveId = chair, score = 1, ratedAt = 1))
+        dao.insertRating(MoveRating(moveId = chair, score = 4, ratedAt = 5))
+
+        val moves = dao.observeMovesWithScore(freezes).first()
+
+        // Sorted by name ignoring case, unrated moves have no score.
+        assertEquals(listOf("baby freeze", "Chair freeze"), moves.map { it.move.name })
+        assertNull(moves[0].latestScore)
+        assertEquals(4, moves[1].latestScore)
+    }
 }
