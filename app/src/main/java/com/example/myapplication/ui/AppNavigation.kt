@@ -1,0 +1,78 @@
+package com.example.myapplication.ui
+
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import com.example.myapplication.ui.library.LibraryScreen
+
+private enum class TopLevelDestination(val route: String, val label: String, val icon: ImageVector) {
+    Library("library", "Library", Icons.Filled.Home),
+    Sets("sets", "Sets", Icons.AutoMirrored.Filled.List),
+    Rounds("rounds", "Rounds", Icons.Filled.PlayArrow),
+    Routines("routines", "Routines", Icons.Filled.DateRange),
+}
+
+@Composable
+fun AppNavigation() {
+    val navController = rememberNavController()
+    val backStackEntry by navController.currentBackStackEntryAsState()
+    val currentDestination = backStackEntry?.destination
+
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        bottomBar = {
+            NavigationBar {
+                TopLevelDestination.entries.forEach { destination ->
+                    NavigationBarItem(
+                        selected = currentDestination?.hierarchy?.any { it.route == destination.route } == true,
+                        onClick = {
+                            navController.navigate(destination.route) {
+                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        },
+                        icon = { Icon(destination.icon, contentDescription = null) },
+                        label = { Text(destination.label) },
+                    )
+                }
+            }
+        },
+    ) { innerPadding ->
+        NavHost(
+            navController = navController,
+            startDestination = TopLevelDestination.Library.route,
+            modifier = Modifier.padding(innerPadding),
+        ) {
+            composable(TopLevelDestination.Library.route) { LibraryScreen() }
+            composable(TopLevelDestination.Sets.route) {
+                PlaceholderScreen("Sets: chain moves from your library into combos.")
+            }
+            composable(TopLevelDestination.Rounds.route) {
+                PlaceholderScreen("Rounds: chain sets and loose moves into battle rounds.")
+            }
+            composable(TopLevelDestination.Routines.route) {
+                PlaceholderScreen("Routines: practice plans and your session log.")
+            }
+        }
+    }
+}
