@@ -29,7 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.myapplication.data.model.CategoryScore
-import com.example.myapplication.ui.theme.MyApplicationTheme
+import com.example.myapplication.ui.theme.CypherTheme
 
 @Composable
 fun LibraryScreen(
@@ -109,7 +109,7 @@ private fun scoreSummary(score: CategoryScore): String = when {
 @Preview(showBackground = true)
 @Composable
 private fun LibraryContentPreview() {
-    MyApplicationTheme {
+    CypherTheme {
         LibraryContent(
             listOf(
                 CategoryScore(1, "Toprock", 3.4, 5, 6),
