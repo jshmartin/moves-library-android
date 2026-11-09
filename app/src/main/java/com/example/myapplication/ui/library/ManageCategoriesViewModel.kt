@@ -18,9 +18,9 @@ data class CategoryWithCount(val category: Category, val moveCount: Int)
 class ManageCategoriesViewModel(private val dao: LibraryDao) : ViewModel() {
     val categories: StateFlow<List<CategoryWithCount>> = combine(
         dao.observeCategories(),
-        dao.observeCategoryScores(),
-    ) { categories, scores ->
-        val counts = scores.associate { it.categoryId to it.totalMoves }
+        dao.observeCategorySummaries(),
+    ) { categories, summaries ->
+        val counts = summaries.associate { it.categoryId to it.totalMoves }
         categories.map { CategoryWithCount(it, counts[it.id] ?: 0) }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 

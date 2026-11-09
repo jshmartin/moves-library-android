@@ -6,10 +6,8 @@ import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Update
 import com.example.myapplication.data.model.Category
-import com.example.myapplication.data.model.CategoryScore
+import com.example.myapplication.data.model.CategorySummary
 import com.example.myapplication.data.model.Move
-import com.example.myapplication.data.model.MoveRating
-import com.example.myapplication.data.model.MoveWithScore
 import com.example.myapplication.data.model.VideoClip
 import kotlinx.coroutines.flow.Flow
 
@@ -36,23 +34,8 @@ interface LibraryDao {
     @Query("SELECT * FROM moves ORDER BY name")
     fun observeMoves(): Flow<List<Move>>
 
-    @Query("SELECT * FROM moves WHERE categoryId = :categoryId ORDER BY name")
+    @Query("SELECT * FROM moves WHERE categoryId = :categoryId ORDER BY name COLLATE NOCASE")
     fun observeMovesInCategory(categoryId: Long): Flow<List<Move>>
-
-    /** Moves in a category, each with its latest rating (null when unrated). */
-    @Query(
-        """
-        SELECT m.*,
-               (SELECT r.score FROM move_ratings r
-                WHERE r.moveId = m.id
-                ORDER BY r.ratedAt DESC, r.id DESC
-                LIMIT 1) AS latestScore
-        FROM moves m
-        WHERE m.categoryId = :categoryId
-        ORDER BY m.name COLLATE NOCASE
-        """
-    )
-    fun observeMovesWithScore(categoryId: Long): Flow<List<MoveWithScore>>
 
     @Query("SELECT * FROM moves WHERE parentMoveId = :moveId ORDER BY name COLLATE NOCASE")
     fun observeVariations(moveId: Long): Flow<List<Move>>
@@ -72,36 +55,19 @@ interface LibraryDao {
     @Delete
     suspend fun deleteMove(move: Move)
 
-    @Insert
-    suspend fun insertRating(rating: MoveRating): Long
-
-    @Query("SELECT * FROM move_ratings WHERE moveId = :moveId ORDER BY ratedAt DESC, id DESC")
-    fun observeRatingHistory(moveId: Long): Flow<List<MoveRating>>
-
-    /**
-     * Each category's average of its moves' latest ratings. Moves of every status count;
-     * unrated moves are left out of the average but included in [CategoryScore.totalMoves].
-     */
+    /** Each category with its number of moves; empty categories are included. */
     @Query(
         """
         SELECT c.id AS categoryId,
                c.name AS categoryName,
-               AVG(latest.score) AS averageScore,
-               COUNT(latest.score) AS ratedMoves,
                COUNT(m.id) AS totalMoves
         FROM categories c
         LEFT JOIN moves m ON m.categoryId = c.id
-        LEFT JOIN move_ratings latest ON latest.id = (
-            SELECT r.id FROM move_ratings r
-            WHERE r.moveId = m.id
-            ORDER BY r.ratedAt DESC, r.id DESC
-            LIMIT 1
-        )
         GROUP BY c.id
         ORDER BY c.sortOrder, c.name
         """
     )
-    fun observeCategoryScores(): Flow<List<CategoryScore>>
+    fun observeCategorySummaries(): Flow<List<CategorySummary>>
 
     @Insert
     suspend fun insertClip(clip: VideoClip): Long

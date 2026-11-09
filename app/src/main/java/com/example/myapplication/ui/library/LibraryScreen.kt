@@ -28,7 +28,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.myapplication.data.model.CategoryScore
+import com.example.myapplication.data.model.CategorySummary
 import com.example.myapplication.ui.theme.CypherTheme
 
 @Composable
@@ -38,14 +38,14 @@ fun LibraryScreen(
     onManageCategories: () -> Unit,
     viewModel: LibraryViewModel = viewModel(factory = LibraryViewModel.Factory),
 ) {
-    val scores by viewModel.categoryScores.collectAsStateWithLifecycle()
-    LibraryContent(scores, onCategoryClick, onAddMove, onManageCategories)
+    val categories by viewModel.categories.collectAsStateWithLifecycle()
+    LibraryContent(categories, onCategoryClick, onAddMove, onManageCategories)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun LibraryContent(
-    scores: List<CategoryScore>,
+    categories: List<CategorySummary>,
     onCategoryClick: (Long) -> Unit,
     onAddMove: () -> Unit,
     onManageCategories: () -> Unit,
@@ -73,7 +73,7 @@ private fun LibraryContent(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            if (scores.isNotEmpty() && scores.all { it.totalMoves == 0 }) {
+            if (categories.isNotEmpty() && categories.all { it.totalMoves == 0 }) {
                 item {
                     Text(
                         "Your library is empty. Tap + to add your first move.",
@@ -82,8 +82,8 @@ private fun LibraryContent(
                     )
                 }
             }
-            items(scores, key = { it.categoryId }) { score ->
-                Card(onClick = { onCategoryClick(score.categoryId) }, modifier = Modifier.fillMaxWidth()) {
+            items(categories, key = { it.categoryId }) { category ->
+                Card(onClick = { onCategoryClick(category.categoryId) }, modifier = Modifier.fillMaxWidth()) {
                     Row(
                         Modifier
                             .fillMaxWidth()
@@ -91,8 +91,8 @@ private fun LibraryContent(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text(score.categoryName, style = MaterialTheme.typography.titleMedium)
-                        Text(scoreSummary(score), style = MaterialTheme.typography.bodyMedium)
+                        Text(category.categoryName, style = MaterialTheme.typography.titleMedium)
+                        Text(moveCountLabel(category.totalMoves), style = MaterialTheme.typography.bodyMedium)
                     }
                 }
             }
@@ -100,10 +100,10 @@ private fun LibraryContent(
     }
 }
 
-private fun scoreSummary(score: CategoryScore): String = when {
-    score.totalMoves == 0 -> "No moves yet"
-    score.averageScore == null -> "${score.totalMoves} unrated"
-    else -> "${formatAverage(score.averageScore)} · ${score.ratedMoves} of ${score.totalMoves} rated"
+private fun moveCountLabel(count: Int): String = when (count) {
+    0 -> "No moves yet"
+    1 -> "1 move"
+    else -> "$count moves"
 }
 
 @Preview(showBackground = true)
@@ -112,9 +112,9 @@ private fun LibraryContentPreview() {
     CypherTheme {
         LibraryContent(
             listOf(
-                CategoryScore(1, "Toprock", 3.4, 5, 6),
-                CategoryScore(2, "Power", null, 0, 2),
-                CategoryScore(3, "Freezes", null, 0, 0),
+                CategorySummary(1, "Toprock", 6),
+                CategorySummary(2, "Power", 2),
+                CategorySummary(3, "Freezes", 0),
             ),
             onCategoryClick = {},
             onAddMove = {},

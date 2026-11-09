@@ -41,26 +41,6 @@ data class SetMove(
     val moveId: Long,
 )
 
-/** A self-rating of a whole set run-through, kept as history like [MoveRating]. */
-@Entity(
-    tableName = "set_ratings",
-    foreignKeys = [
-        ForeignKey(
-            entity = DanceSet::class,
-            parentColumns = ["id"],
-            childColumns = ["setId"],
-            onDelete = ForeignKey.CASCADE,
-        ),
-    ],
-    indices = [Index("setId")],
-)
-data class SetRating(
-    @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val setId: Long,
-    val score: Int,
-    val ratedAt: Long = System.currentTimeMillis(),
-)
-
 /** A battle round: an ordered chain of sets and loose moves (see [RoundItem]). */
 @Entity(tableName = "rounds")
 data class Round(

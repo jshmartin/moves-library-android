@@ -4,7 +4,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -15,7 +14,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -28,18 +26,13 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import java.text.DateFormat
-import java.util.Date
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,7 +44,6 @@ fun MoveDetailScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val move = state.move
-    var pendingScore by rememberSaveable { mutableIntStateOf(0) }
     var confirmDelete by remember { mutableStateOf(false) }
 
     // The move was deleted (here or elsewhere): leave the screen.
@@ -105,25 +97,6 @@ fun MoveDetailScreen(
                 }
             }
 
-            item { SectionTitle("Execution") }
-            item {
-                Text(
-                    state.currentScore?.let { "Current: $it / $MAX_SCORE" } ?: "Not rated yet",
-                    style = MaterialTheme.typography.bodyLarge,
-                )
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    RatingStars(selected = pendingScore, onSelect = { pendingScore = it })
-                    Button(
-                        onClick = {
-                            viewModel.rate(pendingScore)
-                            pendingScore = 0
-                        },
-                        enabled = pendingScore > 0,
-                        modifier = Modifier.padding(start = 8.dp),
-                    ) { Text("Save") }
-                }
-            }
-
             if (state.variations.isNotEmpty()) {
                 item { SectionTitle("Variations") }
                 items(state.variations, key = { "variation-${it.id}" }) { variation ->
@@ -138,21 +111,6 @@ fun MoveDetailScreen(
                     )
                 }
             }
-
-            if (state.ratings.isNotEmpty()) {
-                item { SectionTitle("Rating history") }
-                items(state.ratings, key = { "rating-${it.id}" }) { rating ->
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        Text(DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(rating.ratedAt)))
-                        Text("${rating.score} / $MAX_SCORE")
-                    }
-                }
-            }
         }
     }
 
@@ -161,7 +119,7 @@ fun MoveDetailScreen(
             onDismissRequest = { confirmDelete = false },
             title = { Text("Delete ${move.name}?") },
             text = {
-                Text("Its rating history is deleted too, and it's removed from any sets, rounds and routines. Variations are kept.")
+                Text("It's removed from any sets, rounds and routines. Variations are kept.")
             },
             confirmButton = {
                 TextButton(onClick = {

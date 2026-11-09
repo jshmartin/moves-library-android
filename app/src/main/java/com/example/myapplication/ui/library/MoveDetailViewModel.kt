@@ -8,7 +8,6 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.myapplication.data.dao.LibraryDao
 import com.example.myapplication.data.model.Move
-import com.example.myapplication.data.model.MoveRating
 import com.example.myapplication.ui.breakingApp
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.SharingStarted
@@ -25,10 +24,7 @@ data class MoveDetailUiState(
     val categoryName: String = "",
     val parent: Move? = null,
     val variations: List<Move> = emptyList(),
-    val ratings: List<MoveRating> = emptyList(),
-) {
-    val currentScore: Int? get() = ratings.firstOrNull()?.score
-}
+)
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MoveDetailViewModel(savedStateHandle: SavedStateHandle, private val dao: LibraryDao) : ViewModel() {
@@ -43,25 +39,18 @@ class MoveDetailViewModel(savedStateHandle: SavedStateHandle, private val dao: L
                     dao.observeCategory(move.categoryId),
                     move.parentMoveId?.let { dao.observeMove(it) } ?: flowOf(null),
                     dao.observeVariations(move.id),
-                    dao.observeRatingHistory(move.id),
-                ) { category, parent, variations, ratings ->
+                ) { category, parent, variations ->
                     MoveDetailUiState(
                         loading = false,
                         move = move,
                         categoryName = category?.name.orEmpty(),
                         parent = parent,
                         variations = variations,
-                        ratings = ratings,
                     )
                 }
             }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), MoveDetailUiState())
-
-    fun rate(score: Int) {
-        require(score in 1..MAX_SCORE)
-        viewModelScope.launch { dao.insertRating(MoveRating(moveId = moveId, score = score)) }
-    }
 
     /** Deletes the move; [uiState] then reports no move, which the screen treats as "go back". */
     fun delete() {

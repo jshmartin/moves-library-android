@@ -5,13 +5,11 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.myapplication.data.model.Category
 import com.example.myapplication.data.model.Move
-import com.example.myapplication.data.model.MoveRating
 import com.example.myapplication.data.model.MoveStatus
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -32,45 +30,30 @@ class LibraryDaoTest {
     fun tearDown() = db.close()
 
     @Test
-    fun categoryScoreAveragesLatestRatingsIncludingLearningMoves() = runBlocking {
+    fun categorySummariesCountMovesOfEveryStatus() = runBlocking {
         val dao = db.libraryDao()
         val footwork = dao.insertCategory(Category(name = "Footwork"))
         val power = dao.insertCategory(Category(name = "Power", sortOrder = 1))
 
-        val sixStep = dao.insertMove(Move(name = "6-step", categoryId = footwork, status = MoveStatus.BATTLE_READY))
-        val ccs = dao.insertMove(Move(name = "CC's", categoryId = footwork, status = MoveStatus.LEARNING))
+        dao.insertMove(Move(name = "6-step", categoryId = footwork, status = MoveStatus.BATTLE_READY))
+        dao.insertMove(Move(name = "CC's", categoryId = footwork, status = MoveStatus.LEARNING))
         dao.insertMove(Move(name = "Pretzel", categoryId = footwork))
 
-        dao.insertRating(MoveRating(moveId = sixStep, score = 2, ratedAt = 1))
-        dao.insertRating(MoveRating(moveId = sixStep, score = 5, ratedAt = 2))
-        dao.insertRating(MoveRating(moveId = ccs, score = 2, ratedAt = 1))
+        val summaries = dao.observeCategorySummaries().first()
 
-        val scores = dao.observeCategoryScores().first()
-
-        val footworkScore = scores.single { it.categoryId == footwork }
-        assertEquals(3.5, footworkScore.averageScore!!, 0.001)
-        assertEquals(2, footworkScore.ratedMoves)
-        assertEquals(3, footworkScore.totalMoves)
-
-        val powerScore = scores.single { it.categoryId == power }
-        assertNull(powerScore.averageScore)
-        assertEquals(0, powerScore.totalMoves)
+        assertEquals(3, summaries.single { it.categoryId == footwork }.totalMoves)
+        assertEquals(0, summaries.single { it.categoryId == power }.totalMoves)
     }
 
     @Test
-    fun movesWithScoreCarryLatestRating() = runBlocking {
+    fun movesInCategorySortIgnoringCase() = runBlocking {
         val dao = db.libraryDao()
         val freezes = dao.insertCategory(Category(name = "Freezes"))
-        val chair = dao.insertMove(Move(name = "Chair freeze", categoryId = freezes))
+        dao.insertMove(Move(name = "Chair freeze", categoryId = freezes))
         dao.insertMove(Move(name = "baby freeze", categoryId = freezes))
-        dao.insertRating(MoveRating(moveId = chair, score = 1, ratedAt = 1))
-        dao.insertRating(MoveRating(moveId = chair, score = 4, ratedAt = 5))
 
-        val moves = dao.observeMovesWithScore(freezes).first()
+        val moves = dao.observeMovesInCategory(freezes).first()
 
-        // Sorted by name ignoring case, unrated moves have no score.
-        assertEquals(listOf("baby freeze", "Chair freeze"), moves.map { it.move.name })
-        assertNull(moves[0].latestScore)
-        assertEquals(4, moves[1].latestScore)
+        assertEquals(listOf("baby freeze", "Chair freeze"), moves.map { it.name })
     }
 }
