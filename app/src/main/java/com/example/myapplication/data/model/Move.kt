@@ -1,6 +1,5 @@
 package com.example.myapplication.data.model
 
-import androidx.room.Embedded
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -49,36 +48,6 @@ data class Move(
 )
 
 /**
- * One self-rating of a move's execution (1–5). Ratings are never overwritten, so the full
- * history is kept for trend charts; a move's current score is its latest rating.
- */
-@Entity(
-    tableName = "move_ratings",
-    foreignKeys = [
-        ForeignKey(
-            entity = Move::class,
-            parentColumns = ["id"],
-            childColumns = ["moveId"],
-            onDelete = ForeignKey.CASCADE,
-        ),
-        ForeignKey(
-            entity = VideoClip::class,
-            parentColumns = ["id"],
-            childColumns = ["clipId"],
-            onDelete = ForeignKey.SET_NULL,
-        ),
-    ],
-    indices = [Index("moveId"), Index("clipId")],
-)
-data class MoveRating(
-    @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val moveId: Long,
-    val score: Int,
-    val ratedAt: Long = System.currentTimeMillis(),
-    val clipId: Long? = null,
-)
-
-/**
  * A section of a video that stays where it is on the device; only its URI is stored.
  * A clip belongs to a move or a set. A null [endMs] means "until the end of the video".
  */
@@ -111,17 +80,9 @@ data class VideoClip(
     val createdAt: Long = System.currentTimeMillis(),
 )
 
-/** A move with its latest rating (null when unrated). */
-data class MoveWithScore(
-    @Embedded val move: Move,
-    val latestScore: Int?,
-)
-
-/** A category with the average of its moves' latest ratings (null when nothing is rated). */
-data class CategoryScore(
+/** A category with how many moves are in it. */
+data class CategorySummary(
     val categoryId: Long,
     val categoryName: String,
-    val averageScore: Double?,
-    val ratedMoves: Int,
     val totalMoves: Int,
 )

@@ -16,7 +16,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -42,10 +41,7 @@ fun CategoryMovesScreen(
         contentWindowInsets = WindowInsets(0),
         topBar = {
             TopAppBar(
-                title = {
-                    val average = state.averageScore
-                    Text(if (average == null) state.categoryName else "${state.categoryName} · ${formatAverage(average)}")
-                },
+                title = { Text(state.categoryName) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -71,20 +67,14 @@ fun CategoryMovesScreen(
             }
         } else {
             LazyColumn(Modifier.padding(innerPadding)) {
-                items(state.rows, key = { it.item.move.id }) { row ->
-                    val move = row.item.move
+                items(state.rows, key = { it.move.id }) { row ->
+                    val move = row.move
                     ListItem(
                         modifier = Modifier
                             .clickable { onMoveClick(move.id) }
                             .padding(start = (row.depth * 24).dp),
                         headlineContent = { Text(move.name) },
                         supportingContent = { Text(move.status.label) },
-                        trailingContent = {
-                            Text(
-                                row.item.latestScore?.let { "$it / $MAX_SCORE" } ?: "Unrated",
-                                style = MaterialTheme.typography.labelLarge,
-                            )
-                        },
                     )
                     HorizontalDivider()
                 }

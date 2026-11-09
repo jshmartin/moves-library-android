@@ -1,15 +1,14 @@
 package com.example.myapplication.ui.library
 
 import com.example.myapplication.data.model.Move
-import com.example.myapplication.data.model.MoveWithScore
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class GroupWithVariationsTest {
     private fun move(id: Long, name: String, parent: Long? = null) =
-        MoveWithScore(Move(id = id, name = name, categoryId = 1, parentMoveId = parent), latestScore = null)
+        Move(id = id, name = name, categoryId = 1, parentMoveId = parent)
 
-    private fun List<MoveRow>.summary() = map { it.item.move.name to it.depth }
+    private fun List<MoveRow>.summary() = map { it.move.name to it.depth }
 
     @Test
     fun variationsFollowTheirBaseMove() {
@@ -31,7 +30,7 @@ class GroupWithVariationsTest {
     @Test
     fun parentCycleStillShowsEveryMove() {
         val rows = groupWithVariations(listOf(move(1, "A", parent = 2), move(2, "B", parent = 1)))
-        assertEquals(setOf("A", "B"), rows.map { it.item.move.name }.toSet())
+        assertEquals(setOf("A", "B"), rows.map { it.move.name }.toSet())
         assertEquals(2, rows.size)
     }
 }

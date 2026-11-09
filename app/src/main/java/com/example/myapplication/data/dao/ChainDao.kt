@@ -10,7 +10,6 @@ import com.example.myapplication.data.model.DanceSet
 import com.example.myapplication.data.model.Round
 import com.example.myapplication.data.model.RoundItem
 import com.example.myapplication.data.model.SetMove
-import com.example.myapplication.data.model.SetRating
 import kotlinx.coroutines.flow.Flow
 
 /** Sets (chains of moves) and rounds (chains of sets and loose moves). */
@@ -43,9 +42,6 @@ interface ChainDao {
         clearSetChain(setId)
         insertSetMoves(moveIds.mapIndexed { index, moveId -> SetMove(setId, index, moveId) })
     }
-
-    @Insert
-    suspend fun insertSetRating(rating: SetRating): Long
 
     /** Every move-to-move transition the dancer has chained in a set, with how often. */
     @Query(
