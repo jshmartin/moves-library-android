@@ -1,7 +1,9 @@
 package com.example.myapplication.data
 
+import android.Manifest
 import android.content.ContentResolver
 import android.content.Context
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.media.MediaMetadataRetriever
 import android.net.Uri
@@ -9,6 +11,7 @@ import android.os.Build
 import android.os.ParcelFileDescriptor
 import android.provider.OpenableColumns
 import android.util.LruCache
+import androidx.core.content.ContextCompat
 import java.nio.ByteBuffer
 import java.nio.channels.FileChannel
 import java.security.MessageDigest
@@ -56,6 +59,18 @@ object VideoFiles {
     fun isAvailable(resolver: ContentResolver, uri: Uri): Boolean = runCatching {
         resolver.openFileDescriptor(uri, "r")?.use { true } ?: false
     }.getOrDefault(false)
+
+    /** The runtime permissions that let us look through the device's videos. Any one of them is enough. */
+    fun mediaPermissions(): Array<String> = when {
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE ->
+            arrayOf(Manifest.permission.READ_MEDIA_VIDEO, Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED)
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> arrayOf(Manifest.permission.READ_MEDIA_VIDEO)
+        else -> arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
+    }
+
+    fun canReadDeviceVideos(context: Context): Boolean = mediaPermissions().any {
+        ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
+    }
 
     private val thumbnails = LruCache<String, Bitmap>(64)
 

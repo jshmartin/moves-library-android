@@ -37,11 +37,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.myapplication.data.VideoOwner
 import com.example.myapplication.ui.practice.PracticeLinksSection
 import com.example.myapplication.ui.videos.LinkedVideosSection
+import com.example.myapplication.ui.videos.SlotStatus
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,6 +60,11 @@ fun SetDetailScreen(
     val set = state.set
     var confirmDelete by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
+
+    LifecycleResumeEffect(Unit) {
+        viewModel.refreshAvailability()
+        onPauseOrDispose { }
+    }
 
     // The set was deleted: leave the screen.
     LaunchedEffect(state.loading, set) {
@@ -119,7 +126,7 @@ fun SetDetailScreen(
                     )
                 }
             }
-            items(state.steps, key = { it.position }) { step ->
+            items(state.steps, key = { it.step.position }) { (step, status) ->
                 Row(
                     Modifier
                         .fillMaxWidth()
@@ -132,11 +139,21 @@ fun SetDetailScreen(
                         style = MaterialTheme.typography.bodyLarge,
                         modifier = Modifier.weight(1f),
                     )
-                    if (step.videoUri == null) {
+                    val note = when (status) {
+                        SlotStatus.TOP_VIDEO -> null
+                        SlotStatus.OLDER_VIDEO -> "Older video"
+                        SlotStatus.ALL_MISSING -> "Video missing"
+                        SlotStatus.NO_VIDEO -> "No video"
+                    }
+                    if (note != null) {
                         Text(
-                            "No video",
+                            note,
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = if (status == SlotStatus.ALL_MISSING) {
+                                MaterialTheme.colorScheme.error
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
                         )
                     }
                 }

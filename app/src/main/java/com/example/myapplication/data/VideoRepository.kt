@@ -25,6 +25,9 @@ class VideoRepository(context: Context, private val dao: VideoDao) {
 
     enum class RelinkResult { Relinked, Mismatch, AlreadyInLibrary, Unreadable }
 
+    /** What checking some videos found: ids still missing, and how many relinked themselves. */
+    data class Availability(val missing: Set<Long>, val relinked: Int)
+
     val videosWithOwner: Flow<List<VideoWithOwner>> = dao.observeAllWithOwner()
 
     /** Everywhere each video is linked, by video id. */
@@ -80,6 +83,7 @@ class VideoRepository(context: Context, private val dao: VideoDao) {
                 continue
             }
             val existing = dao.findByFingerprint(probe.fingerprint)
+            val holder = dao.findByUri(uri.toString())
             val videoId = when {
                 existing == null -> {
                     takePermission(uri)
@@ -102,7 +106,11 @@ class VideoRepository(context: Context, private val dao: VideoDao) {
                         id
                     }
                 }
-                existing.uri == uri.toString() || isAvailable(existing) -> {
+                holder != null -> {
+                    duplicates++
+                    holder.id
+                }
+                canOpen(existing) -> {
                     duplicates++
                     existing.id
                 }
@@ -117,15 +125,31 @@ class VideoRepository(context: Context, private val dao: VideoDao) {
         AddResult(added, relinked, duplicates, failed)
     }
 
-    /** Ids of videos whose file can no longer be opened (moved, deleted, or access revoked). */
-    suspend fun findMissing(videos: List<Video>): Set<Long> = withContext(Dispatchers.IO) {
-        videos.filterNot(::isAvailable).mapTo(mutableSetOf()) { it.id }
+    /**
+     * Finds which of [videos] can't be opened (moved, deleted, or access revoked). If the app can
+     * already read the device's media, moved files are found and relinked here, with no prompt.
+     */
+    suspend fun checkAvailability(videos: List<Video>): Availability = withContext(Dispatchers.IO) {
+        val missing = videos.filterNot(::canOpen)
+        val found = if (missing.isNotEmpty() && VideoFiles.canReadDeviceVideos(context)) {
+            try {
+                searchDevice(missing)
+            } catch (_: SecurityException) {
+                emptySet()
+            }
+        } else {
+            emptySet()
+        }
+        Availability(missing.mapTo(mutableSetOf()) { it.id } - found, found.size)
     }
+
+    suspend fun isAvailable(video: Video): Boolean = withContext(Dispatchers.IO) { canOpen(video) }
 
     /** Points [video] at a file the user located by hand. Unless [force], refuses files whose content differs. */
     suspend fun relink(video: Video, uri: Uri, force: Boolean = false): RelinkResult =
         withContext(Dispatchers.IO) {
-            if (dao.findByUri(uri.toString()) != null) return@withContext RelinkResult.AlreadyInLibrary
+            val holder = dao.findByUri(uri.toString())
+            if (holder != null && holder.id != video.id) return@withContext RelinkResult.AlreadyInLibrary
             val probe = VideoFiles.probe(context, uri) ?: return@withContext RelinkResult.Unreadable
             if (probe.fingerprint != video.fingerprint && !force) return@withContext RelinkResult.Mismatch
             relinkTo(video, uri, probe)
@@ -135,17 +159,17 @@ class VideoRepository(context: Context, private val dao: VideoDao) {
     /**
      * Looks through the device's media index for files matching [missing] videos: candidates are
      * narrowed by exact size, then confirmed by fingerprint. Needs media read permission.
-     * Returns how many videos were relinked.
+     * Returns the ids of the videos that can be opened again.
      */
-    suspend fun searchDevice(missing: List<Video>): Int = withContext(Dispatchers.IO) {
-        if (missing.isEmpty()) return@withContext 0
+    suspend fun searchDevice(missing: List<Video>): Set<Long> = withContext(Dispatchers.IO) {
+        if (missing.isEmpty()) return@withContext emptySet()
         val collection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL)
         } else {
             MediaStore.Video.Media.EXTERNAL_CONTENT_URI
         }
         val remaining = missing.associateByTo(mutableMapOf()) { it.fingerprint }
-        var relinked = 0
+        val found = mutableSetOf<Long>()
         missing.map { it.sizeBytes }.distinct().chunked(500).forEach { sizes ->
             if (remaining.isEmpty()) return@forEach
             resolver.query(
@@ -158,15 +182,16 @@ class VideoRepository(context: Context, private val dao: VideoDao) {
                 while (cursor.moveToNext() && remaining.isNotEmpty()) {
                     val uri = ContentUris.withAppendedId(collection, cursor.getLong(0))
                     val fingerprint = VideoFiles.sizeAndFingerprint(resolver, uri)?.second ?: continue
-                    val video = remaining.remove(fingerprint) ?: continue
-                    if (dao.findByUri(uri.toString()) == null) {
-                        relinkTo(video, uri)
-                        relinked++
-                    }
+                    val video = remaining[fingerprint] ?: continue
+                    val holder = dao.findByUri(uri.toString())
+                    if (holder != null && holder.id != video.id) continue
+                    if (holder == null) relinkTo(video, uri)
+                    remaining.remove(fingerprint)
+                    found += video.id
                 }
             }
         }
-        relinked
+        found
     }
 
     suspend fun remove(video: Video) = withContext(Dispatchers.IO) {
@@ -174,11 +199,11 @@ class VideoRepository(context: Context, private val dao: VideoDao) {
         dao.delete(video)
     }
 
-    private fun isAvailable(video: Video) = VideoFiles.isAvailable(resolver, video.uri.toUri())
+    private fun canOpen(video: Video) = VideoFiles.isAvailable(resolver, video.uri.toUri())
 
     private suspend fun relinkTo(video: Video, uri: Uri, probe: VideoFiles.Probe? = null) {
         takePermission(uri)
-        releasePermission(video.uri.toUri())
+        if (video.uri != uri.toString()) releasePermission(video.uri.toUri())
         val current = probe ?: VideoFiles.probe(context, uri)
         dao.update(
             video.copy(

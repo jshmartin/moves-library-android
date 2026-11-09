@@ -74,7 +74,7 @@ fun VideoPlayerScreen(
     val clips = viewModel.clips
     val player = remember { ExoPlayer.Builder(context).build() }
     var currentIndex by remember { mutableIntStateOf(0) }
-    var error by remember { mutableStateOf<String?>(null) }
+    var failed by remember { mutableStateOf(emptyList<String>()) }
 
     DisposableEffect(player) {
         val listener = object : Player.Listener {
@@ -83,7 +83,7 @@ fun VideoPlayerScreen(
             }
 
             override fun onPlayerError(playbackError: PlaybackException) {
-                error = "Couldn't play ${viewModel.clips.getOrNull(player.currentMediaItemIndex)?.title.orEmpty()}"
+                viewModel.clips.getOrNull(player.currentMediaItemIndex)?.let { failed = (failed + it.title).distinct() }
                 if (player.hasNextMediaItem()) {
                     player.seekToNextMediaItem()
                     player.prepare()
@@ -126,7 +126,7 @@ fun VideoPlayerScreen(
         Column(Modifier.padding(innerPadding).fillMaxSize()) {
             if (viewModel.loaded && clips.isEmpty()) {
                 Box(Modifier.weight(1f).fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                    Text("There's no playable video here yet.", style = MaterialTheme.typography.bodyLarge)
+                    Text("There's nothing to play here right now.", style = MaterialTheme.typography.bodyLarge)
                 }
             } else {
                 AndroidView(
@@ -134,10 +134,8 @@ fun VideoPlayerScreen(
                     modifier = Modifier.weight(1f).fillMaxWidth(),
                 )
             }
-            listOfNotNull(
-                viewModel.skipped.takeIf { it.isNotEmpty() }?.let { "No video for: ${it.joinToString(", ")}" },
-                error,
-            ).forEach {
+            val playbackNotice = failed.takeIf { it.isNotEmpty() }?.let { "Couldn't play: ${it.joinToString(", ")}" }
+            (viewModel.notices + listOfNotNull(playbackNotice)).forEach {
                 Text(
                     it,
                     style = MaterialTheme.typography.bodySmall,

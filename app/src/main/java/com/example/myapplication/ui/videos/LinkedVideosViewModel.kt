@@ -15,9 +15,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -30,6 +27,7 @@ data class LinkedVideosUiState(
     val links: Map<Long, List<VideoLinkTarget>> = emptyMap(),
     /** Everything a video here could also be linked to. */
     val linkTargets: List<VideoLinkTarget> = emptyList(),
+    val pendingRelink: PendingRelink? = null,
     val message: String? = null,
 )
 
@@ -39,9 +37,9 @@ class LinkedVideosViewModel(
     private val owner: VideoOwner,
 ) : ViewModel() {
     private val linked = repository.linkedTo(owner)
-    private val missingIds = MutableStateFlow<Set<Long>>(emptySet())
     private val message = MutableStateFlow<String?>(null)
-    private val status = combine(missingIds, message, ::Pair)
+    private val recovery = VideoRecovery(viewModelScope, repository, linked) { message.value = it }
+    private val status = combine(recovery.state, message, ::Pair)
 
     val uiState: StateFlow<LinkedVideosUiState> =
         combine(
@@ -50,24 +48,23 @@ class LinkedVideosViewModel(
             repository.linksByVideo,
             repository.linkTargets,
             status,
-        ) { linked, all, links, targets, (missing, message) ->
+        ) { linked, all, links, targets, (recovered, message) ->
             val linkedIds = linked.mapTo(mutableSetOf()) { it.id }
             LinkedVideosUiState(
-                items = linked.map { VideoItem(it, it.id in missing) },
+                items = linked.map { VideoItem(it, it.id in recovered.missingIds) },
                 candidates = all.filter { it.video.id !in linkedIds },
                 links = links,
                 linkTargets = targets,
+                pendingRelink = recovered.pendingRelink,
                 message = message,
             )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), LinkedVideosUiState())
 
-    init {
-        linked.onEach { missingIds.value = repository.findMissing(it) }.launchIn(viewModelScope)
-    }
+    fun refreshAvailability() = recovery.refresh()
 
-    fun refreshAvailability() {
-        viewModelScope.launch { missingIds.value = repository.findMissing(linked.first()) }
-    }
+    fun relink(video: Video, uri: Uri, force: Boolean = false) = recovery.relink(video, uri, force)
+
+    fun dismissPendingRelink() = recovery.dismissPendingRelink()
 
     fun addFromDevice(uris: List<Uri>) {
         if (uris.isEmpty()) return
