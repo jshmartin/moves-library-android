@@ -6,6 +6,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.myapplication.BreakingApp
 import com.example.myapplication.data.Video
+import com.example.myapplication.data.VideoLinkTarget
 import com.example.myapplication.data.VideoRepository
 import com.example.myapplication.data.VideoRepository.RelinkResult
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,6 +28,10 @@ data class PendingRelink(val video: Video, val uri: Uri)
 
 data class VideoLibraryUiState(
     val items: List<VideoItem> = emptyList(),
+    /** Everywhere each video is linked, by video id. */
+    val links: Map<Long, List<VideoLinkTarget>> = emptyMap(),
+    /** Everything a video could be linked to. */
+    val linkTargets: List<VideoLinkTarget> = emptyList(),
     val searching: Boolean = false,
     val pendingRelink: PendingRelink? = null,
     val message: String? = null,
@@ -41,8 +46,18 @@ class VideoLibraryViewModel(application: Application) : AndroidViewModel(applica
     private val extra = MutableStateFlow(VideoLibraryUiState())
 
     val uiState: StateFlow<VideoLibraryUiState> =
-        combine(repository.videos, missingIds, extra) { videos, missing, extra ->
-            extra.copy(items = videos.map { VideoItem(it, it.id in missing) })
+        combine(
+            repository.videos,
+            repository.linksByVideo,
+            repository.linkTargets,
+            missingIds,
+            extra,
+        ) { videos, links, targets, missing, extra ->
+            extra.copy(
+                items = videos.map { VideoItem(it, it.id in missing) },
+                links = links,
+                linkTargets = targets,
+            )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), VideoLibraryUiState())
 
     init {
@@ -100,6 +115,13 @@ class VideoLibraryViewModel(application: Application) : AndroidViewModel(applica
 
     fun remove(video: Video) {
         viewModelScope.launch { repository.remove(video) }
+    }
+
+    fun link(video: Video, target: VideoLinkTarget) {
+        viewModelScope.launch {
+            repository.link(video.id, target.owner)
+            showMessage("Linked to ${target.label}")
+        }
     }
 
     fun showMessage(message: String) = extra.update { it.copy(message = message) }

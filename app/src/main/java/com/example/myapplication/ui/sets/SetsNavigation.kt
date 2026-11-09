@@ -40,6 +40,7 @@ fun NavGraphBuilder.setsGraph(navController: NavHostController) {
                 onMoveClick = { navController.navigate(LibraryRoutes.move(it)) },
                 onPlayCombo = { navController.navigate(VideoRoutes.combo(it)) },
                 onPlayVideo = { navController.navigate(VideoRoutes.video(it)) },
+                onNavigate = { navController.navigate(it) },
             )
         }
         composable(

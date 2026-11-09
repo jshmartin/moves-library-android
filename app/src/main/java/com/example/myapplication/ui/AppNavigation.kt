@@ -26,6 +26,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.myapplication.ui.library.LibraryRoutes
 import com.example.myapplication.ui.library.libraryGraph
+import com.example.myapplication.ui.practice.PracticeRoutes
+import com.example.myapplication.ui.practice.practiceGraph
 import com.example.myapplication.ui.sets.SetRoutes
 import com.example.myapplication.ui.sets.setsGraph
 import com.example.myapplication.ui.videos.VideoLibraryScreen
@@ -36,7 +38,7 @@ private enum class TopLevelDestination(val route: String, val label: String, val
     Videos("videos", "Videos", Icons.Filled.Star),
     Sets(SetRoutes.GRAPH, "Sets", Icons.AutoMirrored.Filled.List),
     Rounds("rounds", "Rounds", Icons.Filled.PlayArrow),
-    Routines("routines", "Routines", Icons.Filled.DateRange),
+    Practice(PracticeRoutes.GRAPH, "Practice", Icons.Filled.DateRange),
 }
 
 @Composable
@@ -44,26 +46,31 @@ fun AppNavigation() {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
+    // A running practice owns the screen, including a video opened from it, so its timer can't be left behind.
+    val inLivePractice = listOf(backStackEntry, navController.previousBackStackEntry)
+        .any { it?.destination?.route == PracticeRoutes.LIVE }
 
     // Each screen's own top bar handles the status bar inset; the bottom bar handles the rest.
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         contentWindowInsets = WindowInsets(0),
         bottomBar = {
-            NavigationBar {
-                TopLevelDestination.entries.forEach { destination ->
-                    NavigationBarItem(
-                        selected = currentDestination?.hierarchy?.any { it.route == destination.route } == true,
-                        onClick = {
-                            navController.navigate(destination.route) {
-                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        },
-                        icon = { Icon(destination.icon, contentDescription = null) },
-                        label = { Text(destination.label) },
-                    )
+            if (!inLivePractice) {
+                NavigationBar {
+                    TopLevelDestination.entries.forEach { destination ->
+                        NavigationBarItem(
+                            selected = currentDestination?.hierarchy?.any { it.route == destination.route } == true,
+                            onClick = {
+                                navController.navigate(destination.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            },
+                            icon = { Icon(destination.icon, contentDescription = null) },
+                            label = { Text(destination.label) },
+                        )
+                    }
                 }
             }
         },
@@ -75,16 +82,14 @@ fun AppNavigation() {
         ) {
             libraryGraph(navController)
             composable(TopLevelDestination.Videos.route) {
-                VideoLibraryScreen()
+                VideoLibraryScreen(onNavigate = { navController.navigate(it) })
             }
             setsGraph(navController)
             videoPlayer(onBack = { navController.popBackStack() })
             composable(TopLevelDestination.Rounds.route) {
                 PlaceholderScreen("Rounds: chain sets and loose moves into battle rounds.")
             }
-            composable(TopLevelDestination.Routines.route) {
-                PlaceholderScreen("Routines: practice plans and your session log.")
-            }
+            practiceGraph(navController)
         }
     }
 }

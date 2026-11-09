@@ -8,8 +8,11 @@ import android.os.Build
 import android.provider.DocumentsContract
 import android.provider.MediaStore
 import androidx.core.net.toUri
+import com.example.myapplication.data.model.PracticeVideo
+import com.example.myapplication.data.model.SessionVideo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
 class VideoRepository(context: Context, private val dao: VideoDao) {
@@ -24,18 +27,41 @@ class VideoRepository(context: Context, private val dao: VideoDao) {
 
     val videosWithOwner: Flow<List<VideoWithOwner>> = dao.observeAllWithOwner()
 
+    /** Everywhere each video is linked, by video id. */
+    val linksByVideo: Flow<Map<Long, List<VideoLinkTarget>>> =
+        dao.observeLinks().map { links -> links.groupBy({ it.videoId }, { it.target }) }
+
+    val linkTargets: Flow<List<VideoLinkTarget>> = dao.observeLinkTargets()
+
     /** The owner's videos, top video first. */
-    fun linkedTo(owner: VideoOwner): Flow<List<Video>> =
-        dao.observeLinked(owner.moveId, owner.setId, owner.routineId)
+    fun linkedTo(owner: VideoOwner): Flow<List<Video>> = when (owner) {
+        is VideoOwner.Move -> dao.observeLinked(moveId = owner.id, setId = null)
+        is VideoOwner.Set -> dao.observeLinked(moveId = null, setId = owner.id)
+        is VideoOwner.Practice -> dao.observeForPractice(owner.id)
+        is VideoOwner.Session -> dao.observeForSession(owner.id)
+    }
 
-    /** Makes [owner] the video's only owner, as its newest (top) video. */
-    suspend fun link(videoId: Long, owner: VideoOwner) =
-        dao.setOwner(videoId, owner.moveId, owner.setId, owner.routineId, System.currentTimeMillis())
+    /** Links the video to [owner] as its newest (top) video. Replaces any move or set if [owner] is one too. */
+    suspend fun link(videoId: Long, owner: VideoOwner) {
+        val now = System.currentTimeMillis()
+        when (owner) {
+            is VideoOwner.Move -> dao.setOwner(videoId, moveId = owner.id, setId = null, linkedAt = now)
+            is VideoOwner.Set -> dao.setOwner(videoId, moveId = null, setId = owner.id, linkedAt = now)
+            is VideoOwner.Practice -> dao.attachToPractice(PracticeVideo(owner.id, videoId, now))
+            is VideoOwner.Session -> dao.attachToSession(SessionVideo(owner.id, videoId, now))
+        }
+    }
 
-    /** Takes the video off its owner; it stays in the library. */
-    suspend fun unlink(videoId: Long) = dao.setOwner(videoId, null, null, null, null)
+    /** Takes the video off [owner]; it stays in the library and anywhere else it's linked. */
+    suspend fun unlink(videoId: Long, owner: VideoOwner) {
+        when (owner) {
+            is VideoOwner.Exclusive -> dao.setOwner(videoId, moveId = null, setId = null, linkedAt = null)
+            is VideoOwner.Practice -> dao.detachFromPractice(owner.id, videoId)
+            is VideoOwner.Session -> dao.detachFromSession(owner.id, videoId)
+        }
+    }
 
-    suspend fun makeTop(videoId: Long) = dao.setLinkedAt(videoId, System.currentTimeMillis())
+    suspend fun makeTop(videoId: Long, owner: VideoOwner) = link(videoId, owner)
 
     /**
      * Adds picked videos, linking each one to [owner] if given. A file whose content matches a

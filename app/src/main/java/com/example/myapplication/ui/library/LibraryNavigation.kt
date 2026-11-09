@@ -54,6 +54,7 @@ fun NavGraphBuilder.libraryGraph(navController: NavHostController) {
                 onEdit = { navController.navigate(LibraryRoutes.editMove(it)) },
                 onMoveClick = { navController.navigate(LibraryRoutes.move(it)) },
                 onPlayVideo = { navController.navigate(VideoRoutes.video(it)) },
+                onNavigate = { navController.navigate(it) },
             )
         }
         composable(
