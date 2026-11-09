@@ -26,12 +26,15 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.myapplication.ui.library.LibraryRoutes
 import com.example.myapplication.ui.library.libraryGraph
+import com.example.myapplication.ui.sets.SetRoutes
+import com.example.myapplication.ui.sets.setsGraph
 import com.example.myapplication.ui.videos.VideoLibraryScreen
+import com.example.myapplication.ui.videos.videoPlayer
 
 private enum class TopLevelDestination(val route: String, val label: String, val icon: ImageVector) {
     Library(LibraryRoutes.GRAPH, "Library", Icons.Filled.Home),
     Videos("videos", "Videos", Icons.Filled.Star),
-    Sets("sets", "Sets", Icons.AutoMirrored.Filled.List),
+    Sets(SetRoutes.GRAPH, "Sets", Icons.AutoMirrored.Filled.List),
     Rounds("rounds", "Rounds", Icons.Filled.PlayArrow),
     Routines("routines", "Routines", Icons.Filled.DateRange),
 }
@@ -74,9 +77,8 @@ fun AppNavigation() {
             composable(TopLevelDestination.Videos.route) {
                 VideoLibraryScreen()
             }
-            composable(TopLevelDestination.Sets.route) {
-                PlaceholderScreen("Sets: chain moves from your library into combos.")
-            }
+            setsGraph(navController)
+            videoPlayer(onBack = { navController.popBackStack() })
             composable(TopLevelDestination.Rounds.route) {
                 PlaceholderScreen("Rounds: chain sets and loose moves into battle rounds.")
             }

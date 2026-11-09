@@ -70,7 +70,7 @@ import com.example.myapplication.data.VideoFiles
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-private val VIDEO_MIME_TYPES = arrayOf("video/*")
+internal val VIDEO_MIME_TYPES = arrayOf("video/*")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -266,7 +266,7 @@ private fun VideoRow(item: VideoItem, onOpen: () -> Unit, onLocate: () -> Unit, 
 }
 
 @Composable
-private fun Thumbnail(video: Video, missing: Boolean) {
+internal fun Thumbnail(video: Video, missing: Boolean) {
     val context = LocalContext.current
     val bitmap by produceState<Bitmap?>(null, video.uri, missing) {
         value = if (missing) null else withContext(Dispatchers.IO) { VideoFiles.thumbnail(context, video.uri.toUri()) }
@@ -309,7 +309,7 @@ private fun openVideo(context: Context, video: Video) {
     }
 }
 
-private fun formatDuration(ms: Long): String {
+internal fun formatDuration(ms: Long): String {
     val totalSeconds = ms / 1000
     val hours = totalSeconds / 3600
     val minutes = (totalSeconds % 3600) / 60

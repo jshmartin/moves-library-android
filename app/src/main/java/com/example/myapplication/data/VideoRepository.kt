@@ -22,11 +22,27 @@ class VideoRepository(context: Context, private val dao: VideoDao) {
 
     enum class RelinkResult { Relinked, Mismatch, AlreadyInLibrary, Unreadable }
 
+    val videosWithOwner: Flow<List<VideoWithOwner>> = dao.observeAllWithOwner()
+
+    /** The owner's videos, top video first. */
+    fun linkedTo(owner: VideoOwner): Flow<List<Video>> =
+        dao.observeLinked(owner.moveId, owner.setId, owner.routineId)
+
+    /** Makes [owner] the video's only owner, as its newest (top) video. */
+    suspend fun link(videoId: Long, owner: VideoOwner) =
+        dao.setOwner(videoId, owner.moveId, owner.setId, owner.routineId, System.currentTimeMillis())
+
+    /** Takes the video off its owner; it stays in the library. */
+    suspend fun unlink(videoId: Long) = dao.setOwner(videoId, null, null, null, null)
+
+    suspend fun makeTop(videoId: Long) = dao.setLinkedAt(videoId, System.currentTimeMillis())
+
     /**
-     * Adds picked videos. A file whose content matches a library entry that has gone missing
-     * relinks that entry (keeping its history) instead of creating a duplicate.
+     * Adds picked videos, linking each one to [owner] if given. A file whose content matches a
+     * library entry that has gone missing relinks that entry (keeping its history) instead of
+     * creating a duplicate; a file already in the library is linked as it is.
      */
-    suspend fun add(uris: List<Uri>): AddResult = withContext(Dispatchers.IO) {
+    suspend fun add(uris: List<Uri>, owner: VideoOwner? = null): AddResult = withContext(Dispatchers.IO) {
         var added = 0
         var relinked = 0
         var duplicates = 0
@@ -38,7 +54,7 @@ class VideoRepository(context: Context, private val dao: VideoDao) {
                 continue
             }
             val existing = dao.findByFingerprint(probe.fingerprint)
-            when {
+            val videoId = when {
                 existing == null -> {
                     takePermission(uri)
                     val id = dao.insert(
@@ -52,14 +68,25 @@ class VideoRepository(context: Context, private val dao: VideoDao) {
                             addedAt = System.currentTimeMillis(),
                         )
                     )
-                    if (id == -1L) duplicates++ else added++
+                    if (id == -1L) {
+                        duplicates++
+                        dao.findByUri(uri.toString())?.id
+                    } else {
+                        added++
+                        id
+                    }
                 }
-                existing.uri == uri.toString() || isAvailable(existing) -> duplicates++
+                existing.uri == uri.toString() || isAvailable(existing) -> {
+                    duplicates++
+                    existing.id
+                }
                 else -> {
                     relinkTo(existing, uri, probe)
                     relinked++
+                    existing.id
                 }
             }
+            if (owner != null && videoId != null) link(videoId, owner)
         }
         AddResult(added, relinked, duplicates, failed)
     }
