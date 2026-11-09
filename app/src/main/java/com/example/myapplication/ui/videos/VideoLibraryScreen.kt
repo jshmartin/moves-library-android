@@ -1,11 +1,9 @@
 package com.example.myapplication.ui.videos
 
-import android.Manifest
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
-import android.os.Build
 import android.text.format.Formatter
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -83,6 +81,7 @@ fun VideoLibraryScreen(
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     var linkingVideoId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var removingVideoId by rememberSaveable { mutableStateOf<Long?>(null) }
 
     LifecycleResumeEffect(Unit) {
         viewModel.refreshAvailability()
@@ -156,7 +155,7 @@ fun VideoLibraryScreen(
                     MissingBanner(
                         count = state.missingCount,
                         searching = state.searching,
-                        onSearch = { permissionLauncher.launch(mediaPermissions()) },
+                        onSearch = { permissionLauncher.launch(VideoFiles.mediaPermissions()) },
                     )
                 }
             }
@@ -164,12 +163,12 @@ fun VideoLibraryScreen(
                 VideoRow(
                     item = item,
                     links = state.links[item.video.id].orEmpty(),
-                    onOpen = { openVideo(context, item.video) },
+                    onOpen = { viewModel.open(item.video) { openVideo(context, item.video) } },
                     onLocate = {
                         locatingId = item.video.id
                         locateLauncher.launch(VIDEO_MIME_TYPES)
                     },
-                    onRemove = { viewModel.remove(item.video) },
+                    onRemove = { removingVideoId = item.video.id },
                     onLink = { linkingVideoId = item.video.id },
                     onNavigate = onNavigate,
                 )
@@ -190,26 +189,53 @@ fun VideoLibraryScreen(
         )
     }
 
-    state.pendingRelink?.let { pending ->
-        AlertDialog(
-            onDismissRequest = viewModel::dismissPendingRelink,
-            title = { Text("Different file?") },
-            text = {
-                Text(
-                    "This file's content doesn't match \"${pending.video.displayName}\". " +
-                        "It may have been edited or re-encoded. Link it anyway?"
-                )
+    state.items.firstOrNull { it.video.id == removingVideoId }?.let { item ->
+        RemoveVideoDialog(
+            item = item,
+            links = state.links[item.video.id].orEmpty(),
+            onConfirm = {
+                removingVideoId = null
+                viewModel.remove(item.video)
             },
-            confirmButton = {
-                TextButton(onClick = { viewModel.relink(pending.video, pending.uri, force = true) }) {
-                    Text("Link anyway")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = viewModel::dismissPendingRelink) { Text("Cancel") }
-            },
+            onDismiss = { removingVideoId = null },
         )
     }
+
+    state.pendingRelink?.let { pending ->
+        RelinkMismatchDialog(
+            pending = pending,
+            onLinkAnyway = { viewModel.relink(pending.video, pending.uri, force = true) },
+            onDismiss = viewModel::dismissPendingRelink,
+        )
+    }
+}
+
+/** Removing is the one step that can't be undone: the links go, and so does the means to relink it later. */
+@Composable
+private fun RemoveVideoDialog(
+    item: VideoItem,
+    links: List<VideoLinkTarget>,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Remove ${item.video.displayName}?", maxLines = 2, overflow = TextOverflow.Ellipsis) },
+        text = {
+            Text(
+                listOfNotNull(
+                    links.takeIf { it.isNotEmpty() }?.let { "It comes off ${it.joinToString(", ") { link -> link.label }}." },
+                    if (item.missing) {
+                        "If the file turns up later, you'll have to add and link it again."
+                    } else {
+                        "The file stays on your device."
+                    },
+                ).joinToString(" ")
+            )
+        },
+        confirmButton = { TextButton(onClick = onConfirm) { Text("Remove") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
 }
 
 @Composable
@@ -324,21 +350,18 @@ internal fun Thumbnail(video: Video, missing: Boolean) {
     }
 }
 
-private fun mediaPermissions(): Array<String> = when {
-    Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE ->
-        arrayOf(Manifest.permission.READ_MEDIA_VIDEO, Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED)
-    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> arrayOf(Manifest.permission.READ_MEDIA_VIDEO)
-    else -> arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
-}
-
-private fun openVideo(context: Context, video: Video) {
+/** Hands the video to the device's player. Returns false if that couldn't be done. */
+private fun openVideo(context: Context, video: Video): Boolean {
     val intent = Intent(Intent.ACTION_VIEW)
         .setDataAndType(video.uri.toUri(), video.mimeType ?: "video/*")
         .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-    try {
+    return try {
         context.startActivity(intent)
+        true
     } catch (_: ActivityNotFoundException) {
-        // No video player installed; nothing sensible to do here yet.
+        false
+    } catch (_: SecurityException) {
+        false
     }
 }
 

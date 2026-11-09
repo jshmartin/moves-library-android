@@ -8,23 +8,15 @@ import com.example.myapplication.BreakingApp
 import com.example.myapplication.data.Video
 import com.example.myapplication.data.VideoLinkTarget
 import com.example.myapplication.data.VideoRepository
-import com.example.myapplication.data.VideoRepository.RelinkResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class VideoItem(val video: Video, val missing: Boolean)
-
-/** A manual relink whose file didn't match the original, waiting for the user to confirm. */
-data class PendingRelink(val video: Video, val uri: Uri)
 
 data class VideoLibraryUiState(
     val items: List<VideoItem> = emptyList(),
@@ -42,31 +34,38 @@ data class VideoLibraryUiState(
 class VideoLibraryViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = VideoRepository(application, (application as BreakingApp).database.videoDao())
 
-    private val missingIds = MutableStateFlow<Set<Long>>(emptySet())
     private val extra = MutableStateFlow(VideoLibraryUiState())
+    private val recovery = VideoRecovery(viewModelScope, repository, repository.videos, ::showMessage)
 
     val uiState: StateFlow<VideoLibraryUiState> =
         combine(
             repository.videos,
             repository.linksByVideo,
             repository.linkTargets,
-            missingIds,
+            recovery.state,
             extra,
-        ) { videos, links, targets, missing, extra ->
+        ) { videos, links, targets, recovered, extra ->
             extra.copy(
-                items = videos.map { VideoItem(it, it.id in missing) },
+                items = videos.map { VideoItem(it, it.id in recovered.missingIds) },
                 links = links,
                 linkTargets = targets,
+                pendingRelink = recovered.pendingRelink,
             )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), VideoLibraryUiState())
 
-    init {
-        repository.videos.onEach { missingIds.value = repository.findMissing(it) }.launchIn(viewModelScope)
-    }
-
     /** Files can be moved while the app is in the background, so re-check whenever the screen resumes. */
-    fun refreshAvailability() {
-        viewModelScope.launch { missingIds.value = repository.findMissing(repository.videos.first()) }
+    fun refreshAvailability() = recovery.refresh()
+
+    /** The file can vanish after the last check, so look again right before handing it to a player. */
+    fun open(video: Video, startPlayer: () -> Boolean) {
+        viewModelScope.launch {
+            if (repository.isAvailable(video)) {
+                if (!startPlayer()) showMessage("Couldn't open that video")
+            } else {
+                refreshAvailability()
+                showMessage("Can't find that file. It may have been moved or deleted.")
+            }
+        }
     }
 
     fun add(uris: List<Uri>) {
@@ -84,26 +83,16 @@ class VideoLibraryViewModel(application: Application) : AndroidViewModel(applica
         }
     }
 
-    fun relink(video: Video, uri: Uri, force: Boolean = false) {
-        extra.update { it.copy(pendingRelink = null) }
-        viewModelScope.launch {
-            when (repository.relink(video, uri, force)) {
-                RelinkResult.Relinked -> showMessage("Relinked ${video.displayName}")
-                RelinkResult.Mismatch -> extra.update { it.copy(pendingRelink = PendingRelink(video, uri)) }
-                RelinkResult.AlreadyInLibrary -> showMessage("That file is already in your library")
-                RelinkResult.Unreadable -> showMessage("Couldn't read that file")
-            }
-        }
-    }
+    fun relink(video: Video, uri: Uri, force: Boolean = false) = recovery.relink(video, uri, force)
 
-    fun dismissPendingRelink() = extra.update { it.copy(pendingRelink = null) }
+    fun dismissPendingRelink() = recovery.dismissPendingRelink()
 
     fun searchDevice() {
         val missing = uiState.value.items.filter { it.missing }.map { it.video }
         if (missing.isEmpty()) return
         extra.update { it.copy(searching = true) }
         viewModelScope.launch {
-            val found = runCatching { repository.searchDevice(missing) }.getOrDefault(0)
+            val found = runCatching { repository.searchDevice(missing).size }.getOrDefault(0)
             extra.update { it.copy(searching = false) }
             refreshAvailability()
             showMessage(

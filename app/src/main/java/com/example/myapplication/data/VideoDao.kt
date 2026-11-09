@@ -36,6 +36,16 @@ interface VideoDao {
     )
     fun observeLinked(moveId: Long?, setId: Long?): Flow<List<Video>>
 
+    /** Every video filed under a move in a set's chain, with each move's top video before its others. */
+    @Query(
+        """
+        SELECT * FROM videos
+        WHERE moveId IN (SELECT moveId FROM set_moves WHERE setId = :setId)
+        ORDER BY linkedAt DESC, id DESC
+        """
+    )
+    fun observeForSetMoves(setId: Long): Flow<List<Video>>
+
     /** Replaces the video's move or set in one write, so it can never hold two. Nulls unlink it. */
     @Query("UPDATE videos SET moveId = :moveId, setId = :setId, linkedAt = :linkedAt WHERE id = :videoId")
     suspend fun setOwner(videoId: Long, moveId: Long?, setId: Long?, linkedAt: Long?)

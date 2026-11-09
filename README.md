@@ -18,7 +18,7 @@ Every video you've added, and where each one is linked. A video is filed under a
 
 ### Sets
 
-A set is a combo: an ordered chain of moves, where the same move can appear more than once. **Play combo** plays each move's top video back to back in chain order, and tells you which moves had nothing to play.
+A set is a combo: an ordered chain of moves, where the same move can appear more than once. **Play combo** plays each move's top video back to back in chain order. If a top video's file is gone it plays that move's next video instead, and it tells you which moves were swapped or had nothing to play.
 
 ### Practice
 
@@ -44,11 +44,14 @@ The **Log** tab shows each finished session's drills, sets and reps, time practi
 
 Cypher never copies, moves or changes your video files, and removing a video from the app leaves the file alone. For each video it stores a reference to the file, its name, size and duration, and a fingerprint (a SHA-256 hash of the file's size and its first and last 1 MiB).
 
-If a file is moved, the app marks it as missing. There are three ways to reconnect it:
+If a file is moved or deleted, the app marks it as missing and keeps the entry and all its links until you remove it. There are four ways to reconnect it:
 
-- **Add it again.** A picked file whose content matches a missing entry relinks that entry and keeps its links.
-- **Locate it.** You pick the file yourself. If its content doesn't match, the app asks before relinking.
+- **Automatically.** Once you've given the app media permission, it looks for missing files whenever a list of videos opens or the app comes back to the front, and relinks any it finds.
 - **Search the device.** The app looks through the device's media index for a file of the same size and fingerprint. This is the only feature that asks for media permission.
+- **Locate it.** You pick the file yourself, from the Videos tab or from the move, set, practice or log it's on. If its content doesn't match, the app asks before relinking.
+- **Add it again.** A picked file whose content matches a missing entry relinks that entry and keeps its links.
+
+A file that's really been deleted can't be brought back, because the app only stores a reference to it.
 
 Your moves, sets, practices and logs are only stored in the app's database. Android backup is turned off and there's no export, so uninstalling the app or clearing its storage erases them. Your video files aren't affected.
 
@@ -106,13 +109,13 @@ Install it on a connected device:
 
 ## Testing
 
-Unit tests cover the round timer, practice formatting, variation grouping and the video model's rules:
+Unit tests cover the round timer, practice formatting, variation grouping, the video model's rules and how the player falls back when a file is missing:
 
 ```bash
 ./gradlew testDebugUnitTest
 ```
 
-Instrumented tests cover the DAOs, video links and database migrations:
+Instrumented tests cover the DAOs, video links, relinking moved or deleted files and database migrations:
 
 ```bash
 ./gradlew connectedDebugAndroidTest

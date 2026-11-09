@@ -76,6 +76,15 @@ fun LinkedVideosSection(
         ActivityResultContracts.OpenMultipleDocuments()
     ) { uris -> viewModel.addFromDevice(uris) }
 
+    var locatingId by rememberSaveable { mutableStateOf<Long?>(null) }
+    val locateLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        val video = state.items.firstOrNull { it.video.id == locatingId }?.video
+        locatingId = null
+        if (uri != null && video != null) viewModel.relink(video, uri)
+    }
+
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         HorizontalDivider(Modifier.padding(top = 8.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -99,6 +108,10 @@ fun LinkedVideosSection(
                 ownerNoun = ownerNoun,
                 otherLinks = state.links[item.video.id].orEmpty().filter { it.owner != owner },
                 onPlay = { onPlay(item.video.id) },
+                onLocate = {
+                    locatingId = item.video.id
+                    locateLauncher.launch(VIDEO_MIME_TYPES)
+                },
                 onMakeTop = { viewModel.makeTop(item.video) },
                 onRemove = { viewModel.unlink(item.video) },
                 onLink = { linkingVideoId = item.video.id },
@@ -131,6 +144,14 @@ fun LinkedVideosSection(
             onDismiss = { linkingVideoId = null },
         )
     }
+
+    state.pendingRelink?.let { pending ->
+        RelinkMismatchDialog(
+            pending = pending,
+            onLinkAnyway = { viewModel.relink(pending.video, pending.uri, force = true) },
+            onDismiss = viewModel::dismissPendingRelink,
+        )
+    }
 }
 
 @Composable
@@ -140,6 +161,7 @@ private fun LinkedVideoRow(
     ownerNoun: String,
     otherLinks: List<VideoLinkTarget>,
     onPlay: () -> Unit,
+    onLocate: () -> Unit,
     onMakeTop: () -> Unit,
     onRemove: () -> Unit,
     onLink: () -> Unit,
@@ -166,10 +188,13 @@ private fun LinkedVideoRow(
                 )
                 if (item.missing) {
                     Text(
-                        "File not found. Fix it in the Videos tab.",
+                        "File not found. It may have been moved or deleted.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error,
                     )
+                    TextButton(onClick = onLocate, contentPadding = PaddingValues(horizontal = 0.dp)) {
+                        Text("Locate")
+                    }
                 } else {
                     video.durationMs?.let {
                         Text(

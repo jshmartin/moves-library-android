@@ -50,6 +50,23 @@ internal fun VideoLinkChips(links: List<VideoLinkTarget>, onNavigate: (String) -
     }
 }
 
+/** Asks before pointing a video at a file whose content doesn't match it. */
+@Composable
+internal fun RelinkMismatchDialog(pending: PendingRelink, onLinkAnyway: () -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Different file?") },
+        text = {
+            Text(
+                "This file's content doesn't match \"${pending.video.displayName}\". " +
+                    "It may have been edited or re-encoded. Link it anyway?"
+            )
+        },
+        confirmButton = { TextButton(onClick = onLinkAnyway) { Text("Link anyway") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
+}
+
 /** Picks a move, set or practice to link a video to. [current] is where it's linked already. */
 @Composable
 internal fun VideoLinkDialog(

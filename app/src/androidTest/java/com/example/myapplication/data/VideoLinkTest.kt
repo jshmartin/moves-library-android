@@ -94,6 +94,22 @@ class VideoLinkTest {
     }
 
     @Test
+    fun videosOnASetsMovesListEachMovesTopVideoFirst() = runBlocking {
+        val windmill = newMove("Windmill")
+        val flare = newMove("Flare")
+        val notInSet = newMove("Freeze")
+        linkToMove(newVideo("old"), windmill, at = 1)
+        linkToMove(newVideo("best"), windmill, at = 2)
+        linkToMove(newVideo("flare"), flare, at = 3)
+        linkToMove(newVideo("elsewhere"), notInSet, at = 4)
+        val set = chains.saveSet(DanceSet(name = "Combo"), listOf(windmill, flare, windmill))
+
+        val byMove = videos.observeForSetMoves(set).first().groupBy({ it.moveId }, { it.displayName })
+
+        assertEquals(mapOf(flare to listOf("flare"), windmill to listOf("best", "old")), byMove)
+    }
+
+    @Test
     fun comboStepsUseEachMovesTopVideoInChainOrder() = runBlocking {
         val windmill = newMove("Windmill")
         val flare = newMove("Flare")
