@@ -5,6 +5,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -38,23 +39,26 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.myapplication.data.VideoLinkTarget
 import com.example.myapplication.data.VideoOwner
 import com.example.myapplication.data.VideoWithOwner
 
 /**
- * A move's or set's videos, top video first, with controls to add, reorder and remove them.
- * [ownerNoun] is how the owner is named in the UI, e.g. "move".
+ * The videos on a move, set, practice or logged session, top video first, with controls to add,
+ * reorder, remove and link them. [ownerNoun] is how the owner is named in the UI, e.g. "move".
  */
 @Composable
 fun LinkedVideosSection(
     owner: VideoOwner,
     ownerNoun: String,
     onPlay: (videoId: Long) -> Unit,
+    onNavigate: (route: String) -> Unit,
     snackbarHostState: SnackbarHostState,
     viewModel: LinkedVideosViewModel = viewModel(factory = LinkedVideosViewModel.factory(owner)),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var pickingFromLibrary by rememberSaveable { mutableStateOf(false) }
+    var linkingVideoId by rememberSaveable { mutableStateOf<Long?>(null) }
 
     LifecycleResumeEffect(Unit) {
         viewModel.refreshAvailability()
@@ -93,9 +97,12 @@ fun LinkedVideosSection(
                 item = item,
                 isTop = index == 0,
                 ownerNoun = ownerNoun,
+                otherLinks = state.links[item.video.id].orEmpty().filter { it.owner != owner },
                 onPlay = { onPlay(item.video.id) },
                 onMakeTop = { viewModel.makeTop(item.video) },
                 onRemove = { viewModel.unlink(item.video) },
+                onLink = { linkingVideoId = item.video.id },
+                onNavigate = onNavigate,
             )
         }
     }
@@ -103,11 +110,25 @@ fun LinkedVideosSection(
     if (pickingFromLibrary) {
         LibraryPickerDialog(
             candidates = state.candidates,
+            movesVideos = owner is VideoOwner.Exclusive,
             onPick = {
                 pickingFromLibrary = false
                 viewModel.link(it.video)
             },
             onDismiss = { pickingFromLibrary = false },
+        )
+    }
+
+    state.items.firstOrNull { it.video.id == linkingVideoId }?.let { item ->
+        VideoLinkDialog(
+            videoName = item.video.displayName,
+            targets = state.linkTargets,
+            current = state.links[item.video.id].orEmpty(),
+            onPick = {
+                linkingVideoId = null
+                viewModel.linkTo(item.video, it)
+            },
+            onDismiss = { linkingVideoId = null },
         )
     }
 }
@@ -117,9 +138,12 @@ private fun LinkedVideoRow(
     item: VideoItem,
     isTop: Boolean,
     ownerNoun: String,
+    otherLinks: List<VideoLinkTarget>,
     onPlay: () -> Unit,
     onMakeTop: () -> Unit,
     onRemove: () -> Unit,
+    onLink: () -> Unit,
+    onNavigate: (route: String) -> Unit,
 ) {
     val video = item.video
     Card(Modifier.fillMaxWidth().clickable(enabled = !item.missing, onClick = onPlay)) {
@@ -155,6 +179,10 @@ private fun LinkedVideoRow(
                         )
                     }
                 }
+                VideoLinkChips(otherLinks, onNavigate)
+                TextButton(onClick = onLink, contentPadding = PaddingValues(horizontal = 0.dp)) {
+                    Text("Link elsewhere")
+                }
             }
             if (!isTop) {
                 IconButton(onClick = onMakeTop) {
@@ -171,6 +199,7 @@ private fun LinkedVideoRow(
 @Composable
 private fun LibraryPickerDialog(
     candidates: List<VideoWithOwner>,
+    movesVideos: Boolean,
     onPick: (VideoWithOwner) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -194,7 +223,7 @@ private fun LibraryPickerDialog(
                         )
                         candidate.ownerName?.let {
                             Text(
-                                "On $it. Adding it here moves it.",
+                                if (movesVideos) "On $it. Adding it here moves it." else "On $it. It stays there too.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )

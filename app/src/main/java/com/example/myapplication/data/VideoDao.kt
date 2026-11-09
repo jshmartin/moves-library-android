@@ -6,6 +6,8 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import com.example.myapplication.data.model.PracticeVideo
+import com.example.myapplication.data.model.SessionVideo
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -15,38 +17,91 @@ interface VideoDao {
 
     @Query(
         """
-        SELECT v.*, COALESCE(m.name, s.name, r.name) AS ownerName
+        SELECT v.*, COALESCE(m.name, s.name) AS ownerName
         FROM videos v
         LEFT JOIN moves m ON m.id = v.moveId
         LEFT JOIN sets s ON s.id = v.setId
-        LEFT JOIN routines r ON r.id = v.routineId
         ORDER BY v.addedAt DESC
         """
     )
     fun observeAllWithOwner(): Flow<List<VideoWithOwner>>
 
-    /** An owner's videos, top video first. Exactly one argument is non-null. */
+    /** A move's or set's videos, top video first. Exactly one argument is non-null. */
     @Query(
         """
         SELECT * FROM videos
-        WHERE moveId = :moveId OR setId = :setId OR routineId = :routineId
+        WHERE moveId = :moveId OR setId = :setId
         ORDER BY linkedAt DESC, id DESC
         """
     )
-    fun observeLinked(moveId: Long?, setId: Long?, routineId: Long?): Flow<List<Video>>
+    fun observeLinked(moveId: Long?, setId: Long?): Flow<List<Video>>
 
-    /** Replaces the video's owner in one write, so it can never hold two. All nulls unlinks it. */
+    /** Replaces the video's move or set in one write, so it can never hold two. Nulls unlink it. */
+    @Query("UPDATE videos SET moveId = :moveId, setId = :setId, linkedAt = :linkedAt WHERE id = :videoId")
+    suspend fun setOwner(videoId: Long, moveId: Long?, setId: Long?, linkedAt: Long?)
+
     @Query(
         """
-        UPDATE videos
-        SET moveId = :moveId, setId = :setId, routineId = :routineId, linkedAt = :linkedAt
-        WHERE id = :videoId
+        SELECT v.* FROM videos v
+        JOIN practice_videos l ON l.videoId = v.id
+        WHERE l.practiceId = :practiceId
+        ORDER BY l.linkedAt DESC, v.id DESC
         """
     )
-    suspend fun setOwner(videoId: Long, moveId: Long?, setId: Long?, routineId: Long?, linkedAt: Long?)
+    fun observeForPractice(practiceId: Long): Flow<List<Video>>
 
-    @Query("UPDATE videos SET linkedAt = :linkedAt WHERE id = :videoId")
-    suspend fun setLinkedAt(videoId: Long, linkedAt: Long)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun attachToPractice(link: PracticeVideo)
+
+    @Query("DELETE FROM practice_videos WHERE practiceId = :practiceId AND videoId = :videoId")
+    suspend fun detachFromPractice(practiceId: Long, videoId: Long)
+
+    @Query(
+        """
+        SELECT v.* FROM videos v
+        JOIN session_videos l ON l.videoId = v.id
+        WHERE l.sessionId = :sessionId
+        ORDER BY l.linkedAt DESC, v.id DESC
+        """
+    )
+    fun observeForSession(sessionId: Long): Flow<List<Video>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun attachToSession(link: SessionVideo)
+
+    @Query("DELETE FROM session_videos WHERE sessionId = :sessionId AND videoId = :videoId")
+    suspend fun detachFromSession(sessionId: Long, videoId: Long)
+
+    /** Everywhere every video is linked. */
+    @Query(
+        """
+        SELECT v.id AS videoId, 'MOVE' AS kind, m.id AS targetId, m.name AS label
+        FROM videos v JOIN moves m ON m.id = v.moveId
+        UNION ALL
+        SELECT v.id, 'SET', s.id, s.name
+        FROM videos v JOIN sets s ON s.id = v.setId
+        UNION ALL
+        SELECT l.videoId, 'PRACTICE', p.id, p.name
+        FROM practice_videos l JOIN practices p ON p.id = l.practiceId
+        UNION ALL
+        SELECT l.videoId, 'SESSION', s.id, s.name
+        FROM session_videos l JOIN practice_sessions s ON s.id = l.sessionId
+        """
+    )
+    fun observeLinks(): Flow<List<VideoLink>>
+
+    /** The moves, sets and practices a video can be linked to from a picker. */
+    @Query(
+        """
+        SELECT 'MOVE' AS kind, id AS targetId, name AS label FROM moves
+        UNION ALL
+        SELECT 'SET', id, name FROM sets
+        UNION ALL
+        SELECT 'PRACTICE', id, name FROM practices
+        ORDER BY label COLLATE NOCASE
+        """
+    )
+    fun observeLinkTargets(): Flow<List<VideoLinkTarget>>
 
     @Query("SELECT * FROM videos WHERE id = :id")
     suspend fun getById(id: Long): Video?

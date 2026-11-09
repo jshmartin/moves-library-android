@@ -67,6 +67,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.myapplication.data.Video
 import com.example.myapplication.data.VideoFiles
+import com.example.myapplication.data.VideoLinkTarget
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -74,10 +75,14 @@ internal val VIDEO_MIME_TYPES = arrayOf("video/*")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun VideoLibraryScreen(viewModel: VideoLibraryViewModel = viewModel()) {
+fun VideoLibraryScreen(
+    onNavigate: (route: String) -> Unit,
+    viewModel: VideoLibraryViewModel = viewModel(),
+) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
+    var linkingVideoId by rememberSaveable { mutableStateOf<Long?>(null) }
 
     LifecycleResumeEffect(Unit) {
         viewModel.refreshAvailability()
@@ -158,15 +163,31 @@ fun VideoLibraryScreen(viewModel: VideoLibraryViewModel = viewModel()) {
             items(state.items, key = { it.video.id }) { item ->
                 VideoRow(
                     item = item,
+                    links = state.links[item.video.id].orEmpty(),
                     onOpen = { openVideo(context, item.video) },
                     onLocate = {
                         locatingId = item.video.id
                         locateLauncher.launch(VIDEO_MIME_TYPES)
                     },
                     onRemove = { viewModel.remove(item.video) },
+                    onLink = { linkingVideoId = item.video.id },
+                    onNavigate = onNavigate,
                 )
             }
         }
+    }
+
+    state.items.firstOrNull { it.video.id == linkingVideoId }?.let { item ->
+        VideoLinkDialog(
+            videoName = item.video.displayName,
+            targets = state.linkTargets,
+            current = state.links[item.video.id].orEmpty(),
+            onPick = {
+                linkingVideoId = null
+                viewModel.link(item.video, it)
+            },
+            onDismiss = { linkingVideoId = null },
+        )
     }
 
     state.pendingRelink?.let { pending ->
@@ -219,7 +240,15 @@ private fun MissingBanner(count: Int, searching: Boolean, onSearch: () -> Unit) 
 }
 
 @Composable
-private fun VideoRow(item: VideoItem, onOpen: () -> Unit, onLocate: () -> Unit, onRemove: () -> Unit) {
+private fun VideoRow(
+    item: VideoItem,
+    links: List<VideoLinkTarget>,
+    onOpen: () -> Unit,
+    onLocate: () -> Unit,
+    onRemove: () -> Unit,
+    onLink: () -> Unit,
+    onNavigate: (route: String) -> Unit,
+) {
     val video = item.video
     Card(Modifier.fillMaxWidth().clickable(enabled = !item.missing, onClick = onOpen)) {
         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -254,6 +283,10 @@ private fun VideoRow(item: VideoItem, onOpen: () -> Unit, onLocate: () -> Unit, 
                             Text("Remove")
                         }
                     }
+                }
+                VideoLinkChips(links, onNavigate)
+                TextButton(onClick = onLink, contentPadding = PaddingValues(horizontal = 0.dp)) {
+                    Text("Link")
                 }
             }
             if (!item.missing) {

@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.myapplication.data.VideoOwner
+import com.example.myapplication.ui.practice.PracticeLinksSection
 import com.example.myapplication.ui.videos.LinkedVideosSection
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -45,6 +46,7 @@ fun MoveDetailScreen(
     onEdit: (Long) -> Unit,
     onMoveClick: (Long) -> Unit,
     onPlayVideo: (Long) -> Unit,
+    onNavigate: (route: String) -> Unit,
     viewModel: MoveDetailViewModel = viewModel(factory = MoveDetailViewModel.Factory),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -106,10 +108,21 @@ fun MoveDetailScreen(
 
             item(key = "videos") {
                 LinkedVideosSection(
-                    owner = VideoOwner.ofMove(move.id),
+                    owner = VideoOwner.Move(move.id),
                     ownerNoun = "move",
                     onPlay = onPlayVideo,
+                    onNavigate = onNavigate,
                     snackbarHostState = snackbarHostState,
+                )
+            }
+
+            item(key = "practice") {
+                PracticeLinksSection(
+                    moveId = move.id,
+                    setId = null,
+                    title = move.name,
+                    noun = "move",
+                    onNavigate = onNavigate,
                 )
             }
 
@@ -135,7 +148,7 @@ fun MoveDetailScreen(
             onDismissRequest = { confirmDelete = false },
             title = { Text("Delete ${move.name}?") },
             text = {
-                Text("It's removed from any sets, rounds and routines. Variations and videos are kept.")
+                Text("It's removed from any sets, rounds and practices. Variations, videos and logs are kept.")
             },
             confirmButton = {
                 TextButton(onClick = {

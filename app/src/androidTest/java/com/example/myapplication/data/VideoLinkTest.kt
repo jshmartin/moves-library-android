@@ -51,9 +51,9 @@ class VideoLinkTest {
     )
 
     private suspend fun linkToMove(videoId: Long, moveId: Long, at: Long) =
-        videos.setOwner(videoId, moveId = moveId, setId = null, routineId = null, linkedAt = at)
+        videos.setOwner(videoId, moveId = moveId, setId = null, linkedAt = at)
 
-    private suspend fun linked(moveId: Long) = videos.observeLinked(moveId, null, null).first().map { it.displayName }
+    private suspend fun linked(moveId: Long) = videos.observeLinked(moveId, null).first().map { it.displayName }
 
     @Test
     fun linkedVideosListNewestFirstAndMakeTopReorders() = runBlocking {
@@ -64,7 +64,7 @@ class VideoLinkTest {
 
         assertEquals(listOf("second", "first"), linked(move))
 
-        videos.setLinkedAt(first, 3)
+        linkToMove(first, move, at = 3)
 
         assertEquals(listOf("first", "second"), linked(move))
     }
@@ -76,10 +76,10 @@ class VideoLinkTest {
         val video = newVideo("clip")
         linkToMove(video, move, at = 1)
 
-        videos.setOwner(video, moveId = null, setId = set, routineId = null, linkedAt = 2)
+        videos.setOwner(video, moveId = null, setId = set, linkedAt = 2)
 
         assertEquals(emptyList<String>(), linked(move))
-        assertEquals(listOf("clip"), videos.observeLinked(null, set, null).first().map { it.displayName })
+        assertEquals(listOf("clip"), videos.observeLinked(null, set).first().map { it.displayName })
     }
 
     @Test
