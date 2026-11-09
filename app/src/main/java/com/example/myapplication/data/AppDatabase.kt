@@ -1,6 +1,7 @@
 package com.example.myapplication.data
 
 import android.content.Context
+import androidx.room.AutoMigration
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
@@ -34,7 +35,8 @@ import com.example.myapplication.data.model.VideoClip
         PracticeSession::class,
         Video::class,
     ],
-    version = 2,
+    version = 3,
+    autoMigrations = [AutoMigration(from = 2, to = 3)],
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun libraryDao(): LibraryDao

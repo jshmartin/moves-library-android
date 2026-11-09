@@ -20,6 +20,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -33,6 +35,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.myapplication.data.VideoOwner
+import com.example.myapplication.ui.videos.LinkedVideosSection
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,11 +44,13 @@ fun MoveDetailScreen(
     onBack: () -> Unit,
     onEdit: (Long) -> Unit,
     onMoveClick: (Long) -> Unit,
+    onPlayVideo: (Long) -> Unit,
     viewModel: MoveDetailViewModel = viewModel(factory = MoveDetailViewModel.Factory),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val move = state.move
     var confirmDelete by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
 
     // The move was deleted (here or elsewhere): leave the screen.
     LaunchedEffect(state.loading, move) {
@@ -53,6 +59,7 @@ fun MoveDetailScreen(
 
     Scaffold(
         contentWindowInsets = WindowInsets(0),
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text(move?.name.orEmpty()) },
@@ -97,6 +104,15 @@ fun MoveDetailScreen(
                 }
             }
 
+            item(key = "videos") {
+                LinkedVideosSection(
+                    owner = VideoOwner.ofMove(move.id),
+                    ownerNoun = "move",
+                    onPlay = onPlayVideo,
+                    snackbarHostState = snackbarHostState,
+                )
+            }
+
             if (state.variations.isNotEmpty()) {
                 item { SectionTitle("Variations") }
                 items(state.variations, key = { "variation-${it.id}" }) { variation ->
@@ -119,7 +135,7 @@ fun MoveDetailScreen(
             onDismissRequest = { confirmDelete = false },
             title = { Text("Delete ${move.name}?") },
             text = {
-                Text("It's removed from any sets, rounds and routines. Variations are kept.")
+                Text("It's removed from any sets, rounds and routines. Variations and videos are kept.")
             },
             confirmButton = {
                 TextButton(onClick = {

@@ -27,6 +27,48 @@ interface ChainDao {
     @Delete
     suspend fun deleteSet(set: DanceSet)
 
+    @Query("SELECT * FROM sets WHERE id = :id")
+    fun observeSet(id: Long): Flow<DanceSet?>
+
+    @Query("SELECT * FROM sets WHERE id = :id")
+    suspend fun getSet(id: Long): DanceSet?
+
+    /** Every set with how many moves are in its chain. */
+    @Query(
+        """
+        SELECT s.id AS setId, s.name AS name, COUNT(sm.position) AS moveCount
+        FROM sets s
+        LEFT JOIN set_moves sm ON sm.setId = s.id
+        GROUP BY s.id
+        ORDER BY s.name COLLATE NOCASE
+        """
+    )
+    fun observeSetSummaries(): Flow<List<SetSummary>>
+
+    /** The moves in a set's chain, in order, each with its top video if it has one. */
+    @Query(
+        """
+        SELECT sm.position AS position, m.id AS moveId, m.name AS moveName,
+               v.id AS videoId, v.uri AS videoUri
+        FROM set_moves sm
+        JOIN moves m ON m.id = sm.moveId
+        LEFT JOIN videos v ON v.id = (
+            SELECT id FROM videos WHERE moveId = sm.moveId ORDER BY linkedAt DESC, id DESC LIMIT 1
+        )
+        WHERE sm.setId = :setId
+        ORDER BY sm.position
+        """
+    )
+    fun observeComboSteps(setId: Long): Flow<List<ComboStep>>
+
+    /** Creates or updates [set] together with its chain, and returns its id. */
+    @Transaction
+    suspend fun saveSet(set: DanceSet, moveIds: List<Long>): Long {
+        val id = if (set.id == 0L) insertSet(set) else set.id.also { updateSet(set) }
+        replaceSetChain(id, moveIds)
+        return id
+    }
+
     @Query("SELECT * FROM set_moves WHERE setId = :setId ORDER BY position")
     fun observeSetChain(setId: Long): Flow<List<SetMove>>
 
@@ -82,6 +124,21 @@ interface ChainDao {
         insertRoundItems(items.mapIndexed { index, item -> item.copy(roundId = roundId, position = index) })
     }
 }
+
+data class SetSummary(
+    val setId: Long,
+    val name: String,
+    val moveCount: Int,
+)
+
+/** One slot in a combo. [videoId] and [videoUri] are null when the move has no video yet. */
+data class ComboStep(
+    val position: Int,
+    val moveId: Long,
+    val moveName: String,
+    val videoId: Long?,
+    val videoUri: String?,
+)
 
 data class Transition(
     val fromMoveId: Long,

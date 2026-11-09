@@ -6,6 +6,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.navArgument
+import com.example.myapplication.ui.videos.VideoRoutes
 
 object LibraryRoutes {
     const val GRAPH = "library"
@@ -52,6 +53,7 @@ fun NavGraphBuilder.libraryGraph(navController: NavHostController) {
                 onBack = { navController.popBackStack() },
                 onEdit = { navController.navigate(LibraryRoutes.editMove(it)) },
                 onMoveClick = { navController.navigate(LibraryRoutes.move(it)) },
+                onPlayVideo = { navController.navigate(VideoRoutes.video(it)) },
             )
         }
         composable(
