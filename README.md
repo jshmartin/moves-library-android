@@ -71,7 +71,17 @@ If a file is moved or deleted, the app marks it as missing and keeps the entry a
 
 A file that's really been deleted can't be brought back, because the app only stores a reference to it.
 
-Your moves, sets, practices and logs are only stored in the app's database. Android backup is turned off and there's no export, so uninstalling the app or clearing its storage erases them. Your video files aren't affected.
+## Backup and moving phones
+
+Your moves, sets, practices, logs and video links are only stored in the app's database on the phone. Uninstalling the app or clearing its storage erases them, though your video files aren't affected. The app says so on first launch and offers to set up a backup. Android's own cloud backup stays turned off, so nothing leaves the phone unless you send it.
+
+**Backup & transfer**, in the Library tab's menu, has three parts:
+
+- **Automatic backup.** You pick a folder, such as Documents, and the app keeps `cypher-backup.db` there. The file updates a few seconds after each change and survives uninstalling the app. If the folder you pick already holds a backup, for example after a reinstall, the app asks whether to restore it or replace it. It never overwrites one without asking.
+- **Restore.** You pick a backup file, the app shows what's in it, and everything in the app is replaced. You can undo a restore straight after.
+- **Move to a new phone.** **Send backup** hands a fresh backup file to the share sheet, so Quick Share can send it to the new phone without the internet. You then restore it there.
+
+A backup file is a copy of the database, so a backup from an older version of the app is upgraded through the same migrations when it's restored. The app refuses backups from a newer version. Video files aren't in the backup. On restore, any video whose file the app can't open and confirm by its fingerprint is marked missing, so it's relinked automatically or through **Search device** rather than pointing at a different file that now sits at its old address.
 
 ## Tech stack
 
@@ -93,11 +103,13 @@ app/
 ├── schemas/                  Room schema for each database version
 └── src/
     ├── main/java/com/example/myapplication/
-    │   ├── BreakingApp.kt    Application class, owns the database
+    │   ├── BreakingApp.kt    Application class, owns the database and backups
     │   ├── MainActivity.kt
     │   ├── data/             Database, DAOs, entities, video file handling
+    │   │   └── backup/       Backup files, automatic backups, restore
     │   └── ui/
-    │       ├── AppNavigation.kt   Bottom bar and top-level navigation
+    │       ├── AppNavigation.kt   Bottom bar, top-level navigation, first-launch notice
+    │       ├── backup/       Backup & transfer screen
     │       ├── library/      Categories and moves
     │       ├── videos/       Video library, player, linking
     │       ├── sets/         Combos, randomizer, basic sets
@@ -127,13 +139,13 @@ Install it on a connected device:
 
 ## Testing
 
-Unit tests cover the round timer, practice formatting, variation grouping, the starter move list, the set randomizer's rules, the basic sets, the video model's rules and how the player falls back when a file is missing:
+Unit tests cover the round timer, practice formatting, variation grouping, the starter move list, the set randomizer's rules, the basic sets, the video model's rules, how the player falls back when a file is missing and how a backup's contents are described:
 
 ```bash
 ./gradlew testDebugUnitTest
 ```
 
-Instrumented tests cover the DAOs, video links, relinking moved or deleted files, adding the starter moves, adding and editing moves, and database migrations:
+Instrumented tests cover the DAOs, video links, relinking moved or deleted files, adding the starter moves, adding and editing moves, backing up and restoring, and database migrations:
 
 ```bash
 ./gradlew connectedDebugAndroidTest
@@ -146,9 +158,10 @@ Instrumented tests cover the DAOs, video links, relinking moved or deleted files
 The database is defined in `app/src/main/java/com/example/myapplication/data/AppDatabase.kt`. It holds real training history, so schema changes must preserve data. When you change an entity:
 
 1. Increase `version` in `AppDatabase`.
-2. Add a migration.
+2. Add a migration to `AppDatabase.MIGRATIONS`. Backup files are opened with the same list, so older backups keep restoring.
 3. Commit the new schema file Room generates in `app/schemas/`.
 4. Add a case to `AppDatabaseMigrationTest`.
+5. If you added a table, add it to `BackupManager.WATCHED_TABLES` so changes to it trigger a backup. A test fails until you do.
 
 ## Current state
 

@@ -1,6 +1,7 @@
 package com.example.myapplication.ui.library
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
@@ -11,7 +12,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Card
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -22,6 +26,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -36,10 +43,11 @@ fun LibraryScreen(
     onCategoryClick: (Long) -> Unit,
     onAddMove: () -> Unit,
     onManageCategories: () -> Unit,
+    onOpenBackup: () -> Unit,
     viewModel: LibraryViewModel = viewModel(factory = LibraryViewModel.Factory),
 ) {
     val categories by viewModel.categories.collectAsStateWithLifecycle()
-    LibraryContent(categories, onCategoryClick, onAddMove, onManageCategories)
+    LibraryContent(categories, onCategoryClick, onAddMove, onManageCategories, onOpenBackup)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -49,7 +57,9 @@ private fun LibraryContent(
     onCategoryClick: (Long) -> Unit,
     onAddMove: () -> Unit,
     onManageCategories: () -> Unit,
+    onOpenBackup: () -> Unit,
 ) {
+    var menuOpen by remember { mutableStateOf(false) }
     Scaffold(
         contentWindowInsets = WindowInsets(0),
         topBar = {
@@ -58,6 +68,20 @@ private fun LibraryContent(
                 actions = {
                     IconButton(onClick = onManageCategories) {
                         Icon(Icons.Filled.Edit, contentDescription = "Edit categories")
+                    }
+                    Box {
+                        IconButton(onClick = { menuOpen = true }) {
+                            Icon(Icons.Filled.MoreVert, contentDescription = "More options")
+                        }
+                        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                            DropdownMenuItem(
+                                text = { Text("Backup & transfer") },
+                                onClick = {
+                                    menuOpen = false
+                                    onOpenBackup()
+                                },
+                            )
+                        }
                     }
                 },
             )
@@ -119,6 +143,7 @@ private fun LibraryContentPreview() {
             onCategoryClick = {},
             onAddMove = {},
             onManageCategories = {},
+            onOpenBackup = {},
         )
     }
 }

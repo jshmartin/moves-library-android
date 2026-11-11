@@ -234,9 +234,12 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
-        fun build(context: Context): AppDatabase =
-            Room.databaseBuilder(context, AppDatabase::class.java, "breaking.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_3_4, MIGRATION_4_5)
+        /** Every hand-written migration. Backup files are opened with these too, so add new ones here. */
+        val MIGRATIONS = arrayOf(MIGRATION_1_2, MIGRATION_3_4, MIGRATION_4_5)
+
+        fun build(context: Context, name: String = "breaking.db"): AppDatabase =
+            Room.databaseBuilder(context, AppDatabase::class.java, name)
+                .addMigrations(*MIGRATIONS)
                 .addCallback(SEED_ON_CREATE)
                 .build()
     }
