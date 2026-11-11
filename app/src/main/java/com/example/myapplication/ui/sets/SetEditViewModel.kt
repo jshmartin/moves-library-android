@@ -21,9 +21,12 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-/** Creates a new set, or edits one when the route carries a set id. */
+/**
+ * Creates a new set, or edits one when the route carries a set id. A new set can arrive filled in
+ * (see [SetRoutes.draft]), as from the randomizer or a basic set.
+ */
 class SetEditViewModel(
-    savedStateHandle: SavedStateHandle,
+    private val savedStateHandle: SavedStateHandle,
     private val chainDao: ChainDao,
     private val libraryDao: LibraryDao,
 ) : ViewModel() {
@@ -51,6 +54,15 @@ class SetEditViewModel(
                     notes = set.notes
                     val moves = libraryDao.observeMoves().first().associateBy { it.id }
                     chain.addAll(chainDao.observeSetChain(setId).first().mapNotNull { moves[it.moveId] })
+                }
+            } else {
+                name = savedStateHandle.get<String>(SetRoutes.ARG_NAME).orEmpty()
+                notes = savedStateHandle.get<String>(SetRoutes.ARG_NOTES).orEmpty()
+                val draftIds = savedStateHandle.get<String>(SetRoutes.ARG_MOVE_IDS)
+                    ?.split(',')?.mapNotNull { it.trim().toLongOrNull() }.orEmpty()
+                if (draftIds.isNotEmpty()) {
+                    val moves = libraryDao.observeMoves().first().associateBy { it.id }
+                    chain.addAll(draftIds.mapNotNull { moves[it] })
                 }
             }
             loaded = true
