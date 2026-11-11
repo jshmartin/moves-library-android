@@ -6,6 +6,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.navArgument
+import com.example.myapplication.ui.backup.BackupRoutes
 import com.example.myapplication.ui.videos.VideoRoutes
 
 object LibraryRoutes {
@@ -33,6 +34,7 @@ fun NavGraphBuilder.libraryGraph(navController: NavHostController) {
                 onCategoryClick = { navController.navigate(LibraryRoutes.category(it)) },
                 onAddMove = { navController.navigate(LibraryRoutes.newMove()) },
                 onManageCategories = { navController.navigate(LibraryRoutes.CATEGORIES) },
+                onOpenBackup = { navController.navigate(BackupRoutes.HOME) },
             )
         }
         composable(

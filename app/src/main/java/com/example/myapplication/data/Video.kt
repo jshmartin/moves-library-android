@@ -59,6 +59,14 @@ data class Video(
             "A video belongs to at most one move or set"
         }
     }
+
+    companion object {
+        /**
+         * Stands in for the address of a video whose file has to be found again, for example after
+         * restoring a backup on another phone. Nothing can open it, so the video shows as missing.
+         */
+        fun missingUri(id: Long) = "missing:$id"
+    }
 }
 
 /** Something a video can be shown on. */

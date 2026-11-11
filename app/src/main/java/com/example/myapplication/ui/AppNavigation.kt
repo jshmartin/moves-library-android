@@ -18,12 +18,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.myapplication.BreakingApp
+import com.example.myapplication.ui.backup.BackupRoutes
+import com.example.myapplication.ui.backup.DataNoticeDialog
+import com.example.myapplication.ui.backup.backupScreen
 import com.example.myapplication.ui.library.LibraryRoutes
 import com.example.myapplication.ui.library.libraryGraph
 import com.example.myapplication.ui.practice.PracticeRoutes
@@ -87,6 +93,19 @@ fun AppNavigation() {
             setsGraph(navController)
             videoPlayer(onBack = { navController.popBackStack() })
             practiceGraph(navController)
+            backupScreen(onBack = { navController.popBackStack() })
         }
+    }
+
+    val backup = (LocalContext.current.applicationContext as BreakingApp).backup
+    val backupStatus by backup.status.collectAsStateWithLifecycle()
+    if (!backupStatus.noticeSeen && !inLivePractice) {
+        DataNoticeDialog(
+            onSetUp = {
+                backup.markNoticeSeen()
+                navController.navigate(BackupRoutes.HOME)
+            },
+            onNotNow = backup::markNoticeSeen,
+        )
     }
 }
