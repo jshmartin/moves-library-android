@@ -7,7 +7,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -37,7 +36,6 @@ private enum class TopLevelDestination(val route: String, val label: String, val
     Library(LibraryRoutes.GRAPH, "Library", Icons.Filled.Home),
     Videos("videos", "Videos", Icons.Filled.Star),
     Sets(SetRoutes.GRAPH, "Sets", Icons.AutoMirrored.Filled.List),
-    Rounds("rounds", "Rounds", Icons.Filled.PlayArrow),
     Practice(PracticeRoutes.GRAPH, "Practice", Icons.Filled.DateRange),
 }
 
@@ -86,9 +84,6 @@ fun AppNavigation() {
             }
             setsGraph(navController)
             videoPlayer(onBack = { navController.popBackStack() })
-            composable(TopLevelDestination.Rounds.route) {
-                PlaceholderScreen("Rounds: chain sets and loose moves into battle rounds.")
-            }
             practiceGraph(navController)
         }
     }

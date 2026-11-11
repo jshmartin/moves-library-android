@@ -138,7 +138,6 @@ The database is defined in `app/src/main/java/com/example/myapplication/data/App
 
 ## Current state
 
-- The bottom bar still has a **Rounds** tab. It's an empty placeholder from an earlier plan and is due to be removed.
-- The database still has `rounds`, `round_items` and `video_clips` tables that no screen uses.
+- The database still has `rounds`, `round_items` and `video_clips` tables that no screen uses. They're left from an earlier plan for battle rounds, which has no tab for now.
 - The app is named Cypher, but the project still has template names: the package and application ID are `com.example.myapplication`, and the Gradle project is `My Application`.
 - Release builds have no signing configuration yet.
