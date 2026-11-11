@@ -26,6 +26,18 @@ Every video you've added, and where each one is linked. A video is filed under a
 
 A set is a combo: an ordered chain of moves, where the same move can appear more than once. **Play combo** plays each move's top video back to back in chain order. If a top video's file is gone it plays that move's next video instead, and it tells you which moves were swapped or had nothing to play.
 
+**Randomize a set** stacks moves from your library into a new combo of 2 to 10 moves. Its rules work like this:
+
+- **Stages come from category names.** Each move's stage is read from its category's name: toprock, go-down, footwork, power or freeze. Renamed categories such as "Uprock" or "Drops" still count. Moves in a category it can't place, such as "Tricks", are left out, and the screen says so.
+- **A set goes down once and stays down.** It runs from standing down to the floor. Toprock leads into more toprock, a go-down or footwork, never straight into power or a freeze. Once you're on the floor, nothing leads back up to toprock or a go-down.
+- **It usually opens standing and ends on a freeze.** Each stage is as likely as the rules say, however many moves it has.
+- **It avoids repeats.** The same move never comes twice in a row and rarely twice in one set.
+- **Your own transitions count a little extra.** A transition you've already chained in one of your own sets comes up a bit more often.
+
+You can shuffle the whole set, swap one move for another that fits between its neighbours, or skip moves you're still learning. **Save as set** opens the new set in the editor, ready to rename and save. The rules are in `ui/sets/SetFlow.kt`.
+
+**Basic sets** are common beginner combos built from the starter moves, such as the Indian step, knee drop, 6-step and baby freeze, or a coin drop into windmills that ends on a baby freeze. The Sets tab lists each one whose moves are all in your library, matched by name the same way the starter moves are. Tap one to open it in the editor and save it. Once you have it, under that name or as the same chain of moves, it drops off the list. The list is in `data/BasicSets.kt`, and basic sets aren't stored until you save one.
+
 ### Practice
 
 A practice is a saved training plan made up of:
@@ -88,7 +100,7 @@ app/
     │       ├── AppNavigation.kt   Bottom bar and top-level navigation
     │       ├── library/      Categories and moves
     │       ├── videos/       Video library, player, linking
-    │       ├── sets/         Combos
+    │       ├── sets/         Combos, randomizer, basic sets
     │       ├── practice/     Plans, live session, round timer, log
     │       └── theme/        Cypher colors and type
     ├── test/                 JVM unit tests
@@ -115,7 +127,7 @@ Install it on a connected device:
 
 ## Testing
 
-Unit tests cover the round timer, practice formatting, variation grouping, the starter move list, the video model's rules and how the player falls back when a file is missing:
+Unit tests cover the round timer, practice formatting, variation grouping, the starter move list, the set randomizer's rules, the basic sets, the video model's rules and how the player falls back when a file is missing:
 
 ```bash
 ./gradlew testDebugUnitTest

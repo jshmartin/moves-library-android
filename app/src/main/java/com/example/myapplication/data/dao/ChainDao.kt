@@ -72,6 +72,10 @@ interface ChainDao {
     @Query("SELECT * FROM set_moves WHERE setId = :setId ORDER BY position")
     fun observeSetChain(setId: Long): Flow<List<SetMove>>
 
+    /** Every set's chain, ordered by set and then position. */
+    @Query("SELECT * FROM set_moves ORDER BY setId, position")
+    fun observeAllSetChains(): Flow<List<SetMove>>
+
     @Query("DELETE FROM set_moves WHERE setId = :setId")
     suspend fun clearSetChain(setId: Long)
 
