@@ -1,6 +1,7 @@
 package com.example.myapplication.ui
 
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -76,7 +77,8 @@ fun AppNavigation() {
         NavHost(
             navController = navController,
             startDestination = TopLevelDestination.Library.route,
-            modifier = Modifier.padding(innerPadding),
+            // Consumed so a screen's imePadding only adds what the keyboard covers beyond the bottom bar.
+            modifier = Modifier.padding(innerPadding).consumeWindowInsets(innerPadding),
         ) {
             libraryGraph(navController)
             composable(TopLevelDestination.Videos.route) {

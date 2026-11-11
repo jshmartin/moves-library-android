@@ -145,6 +145,11 @@ class VideoRepository(context: Context, private val dao: VideoDao) {
 
     suspend fun isAvailable(video: Video): Boolean = withContext(Dispatchers.IO) { canOpen(video) }
 
+    /** The file name to show for a picked file, before it's added to the library. */
+    suspend fun displayName(uri: Uri): String = withContext(Dispatchers.IO) {
+        VideoFiles.displayName(resolver, uri) ?: uri.lastPathSegment ?: "Video"
+    }
+
     /** Points [video] at a file the user located by hand. Unless [force], refuses files whose content differs. */
     suspend fun relink(video: Video, uri: Uri, force: Boolean = false): RelinkResult =
         withContext(Dispatchers.IO) {

@@ -325,10 +325,13 @@ private fun VideoRow(
 }
 
 @Composable
-internal fun Thumbnail(video: Video, missing: Boolean) {
+internal fun Thumbnail(video: Video, missing: Boolean) = Thumbnail(video.uri, missing)
+
+@Composable
+internal fun Thumbnail(uri: String, missing: Boolean = false) {
     val context = LocalContext.current
-    val bitmap by produceState<Bitmap?>(null, video.uri, missing) {
-        value = if (missing) null else withContext(Dispatchers.IO) { VideoFiles.thumbnail(context, video.uri.toUri()) }
+    val bitmap by produceState<Bitmap?>(null, uri, missing) {
+        value = if (missing) null else withContext(Dispatchers.IO) { VideoFiles.thumbnail(context, uri.toUri()) }
     }
     Box(
         Modifier
