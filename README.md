@@ -8,7 +8,11 @@ It's built for one dancer on one phone. There are no accounts, no server and no 
 
 ### Library
 
-Your moves, grouped into categories. Cypher starts with five categories (Toprock, Go-downs, Footwork, Power, Freezes) that you can rename, reorder or delete. It starts with no moves, because repertoires are personal and you add each one yourself.
+Your moves, grouped into categories. Cypher starts with five categories (Toprock, Go-downs, Footwork, Power, Freezes) that you can rename, reorder or delete.
+
+Each category also starts with its foundation moves, 25 in all, such as the Indian step, knee drop, 6-step, windmill and baby freeze. Each one has a one-line note on how it goes. They're ordinary moves set to Learning, so you can edit or delete any of them and add your own. The list is in `data/StarterMoves.kt`.
+
+Libraries created before the starter moves existed get them once, when the app updates. A starter move is skipped if you already have a move by that name, ignoring case, spacing, punctuation and a trailing "s" (so "Six Step" counts as the 6-step), or if you renamed or deleted its category. Your existing moves aren't changed.
 
 Each move has a status (Learning, In arsenal or Battle-ready), notes and videos. A move can also be a variation of another move, such as a 3-step under a 6-step.
 
@@ -109,13 +113,13 @@ Install it on a connected device:
 
 ## Testing
 
-Unit tests cover the round timer, practice formatting, variation grouping, the video model's rules and how the player falls back when a file is missing:
+Unit tests cover the round timer, practice formatting, variation grouping, the starter move list, the video model's rules and how the player falls back when a file is missing:
 
 ```bash
 ./gradlew testDebugUnitTest
 ```
 
-Instrumented tests cover the DAOs, video links, relinking moved or deleted files and database migrations:
+Instrumented tests cover the DAOs, video links, relinking moved or deleted files, adding the starter moves and database migrations:
 
 ```bash
 ./gradlew connectedDebugAndroidTest

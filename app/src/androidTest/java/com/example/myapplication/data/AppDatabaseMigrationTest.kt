@@ -142,6 +142,58 @@ class AppDatabaseMigrationTest {
         }
     }
 
+    private fun SupportSQLiteDatabase.movesIn(categoryId: Long): Map<String, Long?> =
+        query("SELECT name, parentMoveId FROM moves WHERE categoryId = $categoryId").use { row ->
+            buildMap { while (row.moveToNext()) put(row.getString(0), if (row.isNull(1)) null else row.getLong(1)) }
+        }
+
+    @Test
+    fun migrate4To5AddsMissingStarterMovesAndLeavesTheLibraryAlone() {
+        helper.createDatabase(DB_NAME, 4).use { db ->
+            // Go-downs was respaced, Power renamed and Freezes deleted.
+            db.execSQL(
+                """
+                INSERT INTO categories (id, name, sortOrder)
+                VALUES (1, 'Toprock', 0), (2, 'go downs', 1), (3, 'Footwork', 2), (4, 'Power moves', 3)
+                """
+            )
+            db.execSQL(
+                """
+                INSERT INTO moves (id, name, categoryId, parentMoveId, status, notes, createdAt)
+                VALUES (10, 'Six Step', 3, NULL, 'BATTLE_READY', 'mine', 1),
+                       (11, 'ccs', 3, NULL, 'IN_ARSENAL', '', 2),
+                       (12, 'Windmills', 4, NULL, 'LEARNING', '', 3)
+                """
+            )
+        }
+
+        helper.runMigrationsAndValidate(DB_NAME, 5, true, AppDatabase.MIGRATION_4_5).use { db ->
+            db.query("PRAGMA foreign_key_check").use { assertEquals(0, it.count) }
+
+            fun startersIn(category: String) = StarterMoves.ALL.filter { it.category == category }.map { it.name }.toSet()
+            assertEquals(startersIn("Toprock"), db.movesIn(1).keys)
+            assertEquals(startersIn("Go-downs"), db.movesIn(2).keys)
+            assertEquals(
+                startersIn("Footwork") - setOf("6-step", "CC's") + setOf("Six Step", "ccs"),
+                db.movesIn(3).keys,
+            )
+            assertEquals(setOf("Windmills"), db.movesIn(4).keys)
+            assertEquals(4, db.rowCount("categories"))
+
+            val footwork = db.movesIn(3)
+            assertEquals(10L, footwork["3-step"])
+            assertEquals(10L, footwork["2-step"])
+
+            db.query("SELECT name, status, notes, createdAt FROM moves WHERE id = 10").use { row ->
+                assertTrue(row.moveToFirst())
+                assertEquals("Six Step", row.getString(0))
+                assertEquals("BATTLE_READY", row.getString(1))
+                assertEquals("mine", row.getString(2))
+                assertEquals(1L, row.getLong(3))
+            }
+        }
+    }
+
     private companion object {
         const val DB_NAME = "migration-test"
     }

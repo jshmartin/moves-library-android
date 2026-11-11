@@ -16,7 +16,8 @@ data class Category(
 enum class MoveStatus { LEARNING, IN_ARSENAL, BATTLE_READY }
 
 /**
- * A move in the dancer's library. The library starts empty; every move is created by the user.
+ * A move in the dancer's library. The library starts with [com.example.myapplication.data.StarterMoves],
+ * and the user adds the rest.
  * [parentMoveId] links a variation to its base move (e.g. 3-step under 6-step).
  */
 @Entity(
