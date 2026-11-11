@@ -16,6 +16,8 @@ Libraries created before the starter moves existed get them once, when the app u
 
 Each move has a status (Learning, In arsenal or Battle-ready), notes and videos. A move can also be a variation of another move, such as a 3-step under a 6-step.
 
+To add a move, name it, pick its category and status, and attach videos from your device or the video library if you have them. Adding from a category's screen picks that category for you. Notes are added later, by editing the move.
+
 ### Videos
 
 Every video you've added, and where each one is linked. A video is filed under at most one move or set, and can also be attached to any number of practices and logged sessions. The video most recently linked to a move or set is its "top" video.
@@ -119,7 +121,7 @@ Unit tests cover the round timer, practice formatting, variation grouping, the s
 ./gradlew testDebugUnitTest
 ```
 
-Instrumented tests cover the DAOs, video links, relinking moved or deleted files, adding the starter moves and database migrations:
+Instrumented tests cover the DAOs, video links, relinking moved or deleted files, adding the starter moves, adding and editing moves, and database migrations:
 
 ```bash
 ./gradlew connectedDebugAndroidTest

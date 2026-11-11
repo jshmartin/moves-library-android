@@ -89,7 +89,7 @@ object VideoFiles {
         it.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull()
     }
 
-    private fun displayName(resolver: ContentResolver, uri: Uri): String? = runCatching {
+    fun displayName(resolver: ContentResolver, uri: Uri): String? = runCatching {
         resolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
             if (cursor.moveToFirst()) cursor.getString(0) else null
         }

@@ -221,8 +221,9 @@ private fun LinkedVideoRow(
     }
 }
 
+/** Picks a library video. [movesVideos] says whether adding one takes it off the move or set it's on. */
 @Composable
-private fun LibraryPickerDialog(
+internal fun LibraryPickerDialog(
     candidates: List<VideoWithOwner>,
     movesVideos: Boolean,
     onPick: (VideoWithOwner) -> Unit,
