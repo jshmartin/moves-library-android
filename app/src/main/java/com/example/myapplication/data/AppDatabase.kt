@@ -43,7 +43,7 @@ import com.example.myapplication.data.model.VideoClip
         PracticeVideo::class,
         SessionVideo::class,
     ],
-    version = 4,
+    version = 5,
     autoMigrations = [AutoMigration(from = 2, to = 3)],
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -216,19 +216,28 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** Libraries created before the starter moves existed get the ones they don't already have. */
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) = StarterMoves.seed(db)
+        }
+
+        /** Fills a new database with the default categories and the starter moves. */
+        val SEED_ON_CREATE = object : Callback() {
+            override fun onCreate(db: SupportSQLiteDatabase) {
+                DEFAULT_CATEGORIES.forEachIndexed { index, name ->
+                    db.execSQL(
+                        "INSERT INTO categories (name, sortOrder) VALUES (?, ?)",
+                        arrayOf<Any>(name, index),
+                    )
+                }
+                StarterMoves.seed(db)
+            }
+        }
+
         fun build(context: Context): AppDatabase =
             Room.databaseBuilder(context, AppDatabase::class.java, "breaking.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_3_4)
-                .addCallback(object : Callback() {
-                    override fun onCreate(db: SupportSQLiteDatabase) {
-                        DEFAULT_CATEGORIES.forEachIndexed { index, name ->
-                            db.execSQL(
-                                "INSERT INTO categories (name, sortOrder) VALUES (?, ?)",
-                                arrayOf<Any>(name, index),
-                            )
-                        }
-                    }
-                })
+                .addMigrations(MIGRATION_1_2, MIGRATION_3_4, MIGRATION_4_5)
+                .addCallback(SEED_ON_CREATE)
                 .build()
     }
 }
