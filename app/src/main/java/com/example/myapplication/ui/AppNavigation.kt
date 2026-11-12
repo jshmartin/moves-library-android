@@ -36,8 +36,10 @@ import com.example.myapplication.ui.practice.PracticeRoutes
 import com.example.myapplication.ui.practice.practiceGraph
 import com.example.myapplication.ui.sets.SetRoutes
 import com.example.myapplication.ui.sets.setsGraph
+import com.example.myapplication.ui.videos.RecordRoutes
 import com.example.myapplication.ui.videos.VideoLibraryScreen
 import com.example.myapplication.ui.videos.videoPlayer
+import com.example.myapplication.ui.videos.videoRecorder
 
 private enum class TopLevelDestination(val route: String, val label: String, val icon: ImageVector) {
     Library(LibraryRoutes.GRAPH, "Library", Icons.Filled.Home),
@@ -55,12 +57,15 @@ fun AppNavigation() {
     val inLivePractice = listOf(backStackEntry, navController.previousBackStackEntry)
         .any { it?.destination?.route == PracticeRoutes.LIVE }
 
+    // The camera screen fills the whole display, so it has no bottom bar either.
+    val onRecordScreen = currentDestination?.hierarchy?.any { it.route == RecordRoutes.ROUTE } == true
+
     // Each screen's own top bar handles the status bar inset; the bottom bar handles the rest.
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         contentWindowInsets = WindowInsets(0),
         bottomBar = {
-            if (!inLivePractice) {
+            if (!inLivePractice && !onRecordScreen) {
                 NavigationBar {
                     TopLevelDestination.entries.forEach { destination ->
                         NavigationBarItem(
@@ -92,6 +97,7 @@ fun AppNavigation() {
             }
             setsGraph(navController)
             videoPlayer(onBack = { navController.popBackStack() })
+            videoRecorder(onBack = { navController.popBackStack() })
             practiceGraph(navController)
             backupScreen(onBack = { navController.popBackStack() })
         }
