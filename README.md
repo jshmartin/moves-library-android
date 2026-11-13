@@ -2,7 +2,7 @@
 
 Cypher is an Android app for breakers (breakdancers) who film their training. It keeps a personal library of your moves, links your videos to them, chains moves into combos, and runs and logs your practice sessions.
 
-It's built for one dancer on one phone. There are no accounts, no server and no sync. Your data stays in a database on the device, and your videos stay wherever they already are.
+It's built for one dancer on one phone. There are no accounts, no server and no sync. Your data stays in a database on the device, and your videos stay wherever they already are. Clips you record in the app are saved to the phone's `Movies/Cypher` folder.
 
 ## What's in the app
 
@@ -21,6 +21,14 @@ To add a move, name it, pick its category and status, and attach videos from you
 ### Videos
 
 Every video you've added, and where each one is linked. A video is filed under at most one move or set, and can also be attached to any number of practices and logged sessions. The video most recently linked to a move or set is its "top" video.
+
+**Record** opens the camera, so you can film a clip without leaving the app. It's on the Videos tab, and in the Videos section of every move, set, practice and log entry. Recording from one of those links the new clip to it, as its top video. When you finish, the clip is saved and added to the library, and you can record another or go back.
+
+- **Self-timer.** Off, 3 or 10 seconds, for propping the phone up and stepping back.
+- **Front or back camera.** Flip between them before you start.
+- **Sound.** The microphone is optional. Without it, clips are silent, and the screen says so.
+- **Leaving mid-clip.** The Back key or the close button ends the clip and keeps what was recorded. So does sending the app to the background. The screen holds its orientation while recording, so turn the phone to portrait or landscape first.
+- **Quality.** Clips are 1080p where the camera supports it, and lower otherwise.
 
 ### Sets
 
@@ -62,6 +70,8 @@ The **Log** tab shows each finished session's drills, sets and reps, time practi
 
 Cypher never copies, moves or changes your video files, and removing a video from the app leaves the file alone. For each video it stores a reference to the file, its name, size and duration, and a fingerprint (a SHA-256 hash of the file's size and its first and last 1 MiB).
 
+The one exception is a clip you record in the app. That's a new file, saved in the phone's shared `Movies/Cypher` folder, so it also shows up in the gallery and survives uninstalling the app. After that it's handled like any other video: the app only keeps a reference to it, and removing it from the app leaves the file in place. Android 9 and older ask for storage permission before saving there.
+
 If a file is moved or deleted, the app marks it as missing and keeps the entry and all its links until you remove it. There are four ways to reconnect it:
 
 - **Automatically.** Once you've given the app media permission, it looks for missing files whenever a list of videos opens or the app comes back to the front, and relinks any it finds.
@@ -92,6 +102,7 @@ A backup file is a copy of the database, so a backup from an older version of th
 | Navigation | Navigation Compose, in a single activity |
 | Storage | Room (SQLite) |
 | Video playback | Media3 ExoPlayer |
+| Video recording | CameraX |
 | Android versions | Minimum Android 7.0 (API 24), target API 37 |
 
 Each screen is a composable backed by a `ViewModel`. ViewModels expose `StateFlow`s built from Room `Flow` queries, so the UI updates itself when the data changes. There's no dependency injection framework: ViewModel factories get the database from `BreakingApp`.
@@ -111,7 +122,7 @@ app/
     │       ├── AppNavigation.kt   Bottom bar, top-level navigation, first-launch notice
     │       ├── backup/       Backup & transfer screen
     │       ├── library/      Categories and moves
-    │       ├── videos/       Video library, player, linking
+    │       ├── videos/       Video library, player, recording, linking
     │       ├── sets/         Combos, randomizer, basic sets
     │       ├── practice/     Plans, live session, round timer, log
     │       └── theme/        Cypher colors and type
@@ -139,13 +150,13 @@ Install it on a connected device:
 
 ## Testing
 
-Unit tests cover the round timer, practice formatting, variation grouping, the starter move list, the set randomizer's rules, the basic sets, the video model's rules, how the player falls back when a file is missing and how a backup's contents are described:
+Unit tests cover the round timer, practice formatting, variation grouping, the starter move list, the set randomizer's rules, the basic sets, the video model's rules, how recordings are named and which ones are kept, how the player falls back when a file is missing and how a backup's contents are described:
 
 ```bash
 ./gradlew testDebugUnitTest
 ```
 
-Instrumented tests cover the DAOs, video links, relinking moved or deleted files, adding the starter moves, adding and editing moves, backing up and restoring, and database migrations:
+Instrumented tests cover the DAOs, video links, relinking moved or deleted files, filing a finished recording, adding the starter moves, adding and editing moves, backing up and restoring, and database migrations:
 
 ```bash
 ./gradlew connectedDebugAndroidTest

@@ -5,6 +5,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -30,10 +32,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -41,12 +45,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.myapplication.data.VideoLinkTarget
 import com.example.myapplication.data.VideoOwner
+import com.example.myapplication.data.VideoRecording
 import com.example.myapplication.data.VideoWithOwner
 
 /**
  * The videos on a move, set, practice or logged session, top video first, with controls to add,
  * reorder, remove and link them. [ownerNoun] is how the owner is named in the UI, e.g. "move".
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun LinkedVideosSection(
     owner: VideoOwner,
@@ -57,6 +63,8 @@ fun LinkedVideosSection(
     viewModel: LinkedVideosViewModel = viewModel(factory = LinkedVideosViewModel.factory(owner)),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val canRecord = remember { VideoRecording.isSupported(context) }
     var pickingFromLibrary by rememberSaveable { mutableStateOf(false) }
     var linkingVideoId by rememberSaveable { mutableStateOf<Long?>(null) }
 
@@ -88,10 +96,16 @@ fun LinkedVideosSection(
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         HorizontalDivider(Modifier.padding(top = 8.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Videos", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-            TextButton(onClick = { addLauncher.launch(VIDEO_MIME_TYPES) }) { Text("From device") }
-            if (state.candidates.isNotEmpty()) {
-                TextButton(onClick = { pickingFromLibrary = true }) { Text("From library") }
+            Text("Videos", style = MaterialTheme.typography.titleSmall)
+            // Wraps onto a second line on narrow screens instead of squeezing the labels.
+            FlowRow(Modifier.weight(1f), horizontalArrangement = Arrangement.End) {
+                if (canRecord) {
+                    TextButton(onClick = { onNavigate(RecordRoutes.record(owner)) }) { Text("Record") }
+                }
+                TextButton(onClick = { addLauncher.launch(VIDEO_MIME_TYPES) }) { Text("From device") }
+                if (state.candidates.isNotEmpty()) {
+                    TextButton(onClick = { pickingFromLibrary = true }) { Text("From library") }
+                }
             }
         }
         if (state.items.isEmpty()) {
