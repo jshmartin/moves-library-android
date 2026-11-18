@@ -41,7 +41,6 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.myapplication.data.VideoOwner
-import com.example.myapplication.ui.practice.PracticeLinksSection
 import com.example.myapplication.ui.videos.LinkedVideosSection
 import com.example.myapplication.ui.videos.SlotStatus
 
@@ -166,16 +165,6 @@ fun SetDetailScreen(
                     onPlay = onPlayVideo,
                     onNavigate = onNavigate,
                     snackbarHostState = snackbarHostState,
-                )
-            }
-
-            item(key = "practice") {
-                PracticeLinksSection(
-                    moveId = null,
-                    setId = set.id,
-                    title = set.name,
-                    noun = "set",
-                    onNavigate = onNavigate,
                 )
             }
         }
