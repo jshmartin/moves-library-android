@@ -14,7 +14,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "io.github.jshmartin.breaklog"
+        applicationId = "io.github.jshmartin.cypher"
         minSdk = 24
         targetSdk = 37
         versionCode = 1

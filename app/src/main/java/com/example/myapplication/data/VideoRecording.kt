@@ -15,7 +15,7 @@ import java.util.TimeZone
 /** Where in-app recordings go, what they're called, and which permissions they need. */
 object VideoRecording {
     /** Recordings land in the shared Movies folder under this name, so they also show up in the phone's gallery. */
-    const val FOLDER = "Breaklog"
+    const val FOLDER = "Cypher"
 
     fun fileName(timeMs: Long, zone: TimeZone = TimeZone.getDefault()): String {
         val format = SimpleDateFormat("yyyy-MM-dd HH-mm-ss", Locale.US)

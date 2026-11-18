@@ -1,14 +1,14 @@
-# Breaklog
+# Cypher
 
-Breaklog is an Android app for breakers (breakdancers) who film their training. It keeps a personal library of your moves, links your videos to them, chains moves into combos, and runs and logs your practice sessions.
+Cypher is an Android app for breakers (breakdancers) who film their training. It keeps a personal library of your moves, links your videos to them, chains moves into combos, and runs and logs your practice sessions.
 
-It's built for one dancer on one phone. There are no accounts, no server and no sync. Your data stays in a database on the device, and your videos stay wherever they already are. Clips you record in the app are saved to the phone's `Movies/Breaklog` folder.
+It's built for one dancer on one phone. There are no accounts, no server and no sync. Your data stays in a database on the device, and your videos stay wherever they already are. Clips you record in the app are saved to the phone's `Movies/Cypher` folder.
 
 ## What's in the app
 
 ### Library
 
-Your moves, grouped into categories. Breaklog starts with five categories (Toprock, Go-downs, Footwork, Power, Freezes) that you can rename, reorder or delete.
+Your moves, grouped into categories. Cypher starts with five categories (Toprock, Go-downs, Footwork, Power, Freezes) that you can rename, reorder or delete.
 
 Each category also starts with its foundation moves, 25 in all, such as the Indian step, knee drop, 6-step, windmill and baby freeze. Each one has a one-line note on how it goes. They're ordinary moves set to Learning, so you can edit or delete any of them and add your own. The list is in `data/StarterMoves.kt`.
 
@@ -68,9 +68,9 @@ The **Log** tab shows each finished session's drills, sets and reps, time practi
 
 ## How videos are handled
 
-Breaklog never copies, moves or changes your video files, and removing a video from the app leaves the file alone. For each video it stores a reference to the file, its name, size and duration, and a fingerprint (a SHA-256 hash of the file's size and its first and last 1 MiB).
+Cypher never copies, moves or changes your video files, and removing a video from the app leaves the file alone. For each video it stores a reference to the file, its name, size and duration, and a fingerprint (a SHA-256 hash of the file's size and its first and last 1 MiB).
 
-The one exception is a clip you record in the app. That's a new file, saved in the phone's shared `Movies/Breaklog` folder, so it also shows up in the gallery and survives uninstalling the app. After that it's handled like any other video: the app only keeps a reference to it, and removing it from the app leaves the file in place. Android 9 and older ask for storage permission before saving there.
+The one exception is a clip you record in the app. That's a new file, saved in the phone's shared `Movies/Cypher` folder, so it also shows up in the gallery and survives uninstalling the app. After that it's handled like any other video: the app only keeps a reference to it, and removing it from the app leaves the file in place. Android 9 and older ask for storage permission before saving there.
 
 If a file is moved or deleted, the app marks it as missing and keeps the entry and all its links until you remove it. There are four ways to reconnect it:
 
@@ -87,7 +87,7 @@ Your moves, sets, practices, logs and video links are only stored in the app's d
 
 **Backup & transfer**, in the Library tab's menu, has three parts:
 
-- **Automatic backup.** You pick a folder, such as Documents, and the app keeps `breaklog-backup.db` there. The file updates a few seconds after each change and survives uninstalling the app. If the folder you pick already holds a backup, for example after a reinstall, the app asks whether to restore it or replace it. It never overwrites one without asking.
+- **Automatic backup.** You pick a folder, such as Documents, and the app keeps `cypher-backup.db` there. The file updates a few seconds after each change and survives uninstalling the app. If the folder you pick already holds a backup, for example after a reinstall, the app asks whether to restore it or replace it. It never overwrites one without asking.
 - **Restore.** You pick a backup file, the app shows what's in it, and everything in the app is replaced. You can undo a restore straight after.
 - **Move to a new phone.** **Send backup** hands a fresh backup file to the share sheet, so Quick Share can send it to the new phone without the internet. You then restore it there.
 
@@ -125,7 +125,7 @@ app/
     │       ├── videos/       Video library, player, recording, linking
     │       ├── sets/         Combos, randomizer, basic sets
     │       ├── practice/     Plans, live session, round timer, log
-    │       └── theme/        Breaklog colors and type
+    │       └── theme/        Cypher colors and type
     ├── test/                 JVM unit tests
     └── androidTest/          Instrumented tests
 ```
@@ -177,5 +177,5 @@ The database is defined in `app/src/main/java/com/example/myapplication/data/App
 ## Current state
 
 - The database still has `rounds`, `round_items` and `video_clips` tables that no screen uses. They're left from an earlier plan for battle rounds, which has no tab for now.
-- The app is named Breaklog (application ID `io.github.jshmartin.breaklog`), but the Kotlin package is still the template `com.example.myapplication` and the Gradle project is `My Application`. Some internal names (`Theme.Cypher`, `cypher_*` colors) date from its earlier name.
+- The app is named Cypher, but the project still has template names: the package and application ID are `com.example.myapplication`, and the Gradle project is `My Application`.
 - Release builds have no signing configuration yet.

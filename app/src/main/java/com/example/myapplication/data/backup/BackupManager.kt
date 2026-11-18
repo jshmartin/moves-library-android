@@ -164,7 +164,7 @@ class BackupManager(
             mkdirs()
         }
         val day = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
-        val file = File(dir, "breaklog-backup-$day.db")
+        val file = File(dir, "cypher-backup-$day.db")
         busy.withLock { DatabaseBackup.write(context, database, file) }
         FileProvider.getUriForFile(context, "${context.packageName}.backup", file)
     }
@@ -282,7 +282,7 @@ class BackupManager(
     )
 
     companion object {
-        const val FILE_NAME = "breaklog-backup.db"
+        const val FILE_NAME = "cypher-backup.db"
         private const val MIME_TYPE = "application/octet-stream"
         private const val SHARE_DIR = "shared"
         private const val SETTLE_MILLIS = 5_000L

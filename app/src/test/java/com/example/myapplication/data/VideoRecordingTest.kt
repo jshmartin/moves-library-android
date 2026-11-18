@@ -12,13 +12,13 @@ class VideoRecordingTest {
     fun namesAClipAfterWhenItWasRecorded() {
         // 2026-11-12 14:03:22 UTC
         val time = 1_794_492_202_000L
-        assertEquals("Breaklog 2026-11-12 14-03-22", VideoRecording.fileName(time, TimeZone.getTimeZone("UTC")))
+        assertEquals("Cypher 2026-11-12 14-03-22", VideoRecording.fileName(time, TimeZone.getTimeZone("UTC")))
     }
 
     @Test
     fun namesFollowTheTimeZone() {
         val time = 1_794_492_202_000L
-        assertEquals("Breaklog 2026-11-12 23-03-22", VideoRecording.fileName(time, TimeZone.getTimeZone("Asia/Tokyo")))
+        assertEquals("Cypher 2026-11-12 23-03-22", VideoRecording.fileName(time, TimeZone.getTimeZone("Asia/Tokyo")))
     }
 
     @Test
