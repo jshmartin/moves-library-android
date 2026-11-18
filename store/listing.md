@@ -1,10 +1,10 @@
-# Play Console answers for Cypher
+# Play Console answers for Breaklog
 
 Paste these into Play Console. Character limits are in brackets.
 
 ## Store listing
 
-**App name** [30]: `Cypher: Breaking Practice`
+**App name** [30]: `Breaklog: Breaking Practice`
 
 **Short description** [80]:
 `Organize your breaking moves, sets and practice videos. All on your phone.`
@@ -12,7 +12,7 @@ Paste these into Play Console. Character limits are in brackets.
 **Full description** [4000]:
 
 ```
-Cypher is a practice notebook for breakers. Keep your moves, build sets, run practices and track your progress on video, all in one place and all on your phone.
+Breaklog is a practice notebook for breakers. Keep your moves, build sets, run practices and track your progress on video, all in one place and all on your phone.
 
 MOVE LIBRARY
 • Starts with a library of common moves across toprock, go-downs, footwork, power and freezes
@@ -21,8 +21,8 @@ MOVE LIBRARY
 
 VIDEOS
 • Record practice clips in the app, with a countdown timer so you can get in position
-• Or link videos already on your phone. Cypher only keeps a link; your files stay where they are
-• If you move or rename a video, Cypher can find it again
+• Or link videos already on your phone. Breaklog only keeps a link; your files stay where they are
+• If you move or rename a video, Breaklog can find it again
 
 SETS
 • Chain moves into sets and keep them organized
@@ -34,7 +34,7 @@ PRACTICE
 
 PRIVATE BY DESIGN
 • No account, no ads, no tracking
-• Cypher does not have internet access. Your data never leaves your phone
+• Breaklog does not have internet access. Your data never leaves your phone
 • Make backups to a folder you choose, and move everything to a new phone with one file
 ```
 
@@ -65,6 +65,6 @@ PRIVATE BY DESIGN
 **Target audience:** 13+ (choosing under 13 brings in the Families policy for no benefit)
 
 **Photo and video permissions declaration** (`READ_MEDIA_VIDEO`):
-> Cypher is a video organizer for dance practice. Users link many practice videos to moves in their library, and the app keeps only a link to each file. When a video is moved or renamed by the user or another app, Cypher needs to search the device's videos to find it again and repair the link, so the user's library doesn't silently lose its videos. This check runs automatically every time a screen that lists videos opens, across the user's whole library. The one-time photo picker cannot do this. Without the permission, the user would have to find and re-pick each moved video by hand.
+> Breaklog is a video organizer for dance practice. Users link many practice videos to moves in their library, and the app keeps only a link to each file. When a video is moved or renamed by the user or another app, Breaklog needs to search the device's videos to find it again and repair the link, so the user's library doesn't silently lose its videos. This check runs automatically every time a screen that lists videos opens, across the user's whole library. The one-time photo picker cannot do this. Without the permission, the user would have to find and re-pick each moved video by hand.
 
 Play may still ask you to switch to the photo picker. If they reject it, the fallback is to drop `READ_MEDIA_VIDEO` and ask the user to re-pick a moved video.

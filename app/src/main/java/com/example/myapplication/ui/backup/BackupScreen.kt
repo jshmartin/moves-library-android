@@ -61,7 +61,7 @@ fun NavGraphBuilder.backupScreen(onBack: () -> Unit) {
 
 /** Shown on first launch and at the top of the backup screen, so nobody finds out the hard way. */
 private const val DATA_NOTICE =
-    "Cypher has no account and no cloud. Your moves, sets, practices, logs and video links are saved only on " +
+    "Breaklog has no account and no cloud. Your moves, sets, practices, logs and video links are saved only on " +
         "this phone, so uninstalling the app, clearing its storage or losing the phone erases them. " +
         "Your video files aren't affected."
 
@@ -75,7 +75,7 @@ fun DataNoticeDialog(onSetUp: () -> Unit, onNotNow: () -> Unit) {
         text = {
             Text(
                 "$DATA_NOTICE\n\nTurn on automatic backups to keep a copy in a folder you choose. " +
-                    "If you've used Cypher before, you can restore your backup there too."
+                    "If you've used Breaklog before, you can restore your backup there too."
             )
         },
         confirmButton = { TextButton(onClick = onSetUp) { Text("Set up backup") } },
@@ -151,7 +151,7 @@ fun BackupScreen(onBack: () -> Unit, viewModel: BackupViewModel = viewModel()) {
                 item {
                     Section("Restore") {
                         Body(
-                            "Replace everything in the app with a backup file. Use this after reinstalling Cypher " +
+                            "Replace everything in the app with a backup file. Use this after reinstalling Breaklog " +
                                 "or on a new phone. You can undo it straight after."
                         )
                         OutlinedButton(onClick = { backupPicker.launch(arrayOf("*/*")) }, enabled = !state.working) {
@@ -164,7 +164,7 @@ fun BackupScreen(onBack: () -> Unit, viewModel: BackupViewModel = viewModel()) {
                         Step(1, "Move your videos to the new phone, for example with your phone's transfer tool.")
                         Step(2, "Send a backup to the new phone. Quick Share sends it straight across without the internet.")
                         OutlinedButton(onClick = send, enabled = !state.working) { Text("Send backup") }
-                        Step(3, "On the new phone, install Cypher and open Backup & transfer. Tap Restore from a backup file.")
+                        Step(3, "On the new phone, install Breaklog and open Backup & transfer. Tap Restore from a backup file.")
                         Step(4, "In the Videos tab, tap Search device to reconnect your videos.")
                     }
                 }
@@ -209,7 +209,7 @@ private fun AutomaticBackupSection(
     Section("Automatic backup") {
         if (status.folder == null) {
             Body(
-                "Choose a folder, such as Documents, and Cypher keeps a backup file there that updates by itself " +
+                "Choose a folder, such as Documents, and Breaklog keeps a backup file there that updates by itself " +
                     "whenever you make a change. The file stays even if the app is uninstalled."
             )
             Button(onClick = onChooseFolder, enabled = !working) { Text("Choose folder") }
@@ -254,7 +254,7 @@ private fun FolderWithBackupDialog(
                     "It has ${describeBackup(existing.summary)}. Restore it to bring that data into the app, " +
                         "or replace it with what's in the app now."
                 } else {
-                    "There's a backup file here that Cypher can't read. Replace it with what's in the app now?"
+                    "There's a backup file here that Breaklog can't read. Replace it with what's in the app now?"
                 }
             )
         },

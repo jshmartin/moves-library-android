@@ -41,10 +41,10 @@ class BackupViewModel(application: Application) : AndroidViewModel(application) 
         val found = try {
             backup.chooseFolder(tree)
         } catch (e: SecurityException) {
-            show("Cypher can't use that folder. Pick another one.")
+            show("Breaklog can't use that folder. Pick another one.")
             return@work
         } catch (e: IllegalArgumentException) {
-            show("Cypher can't use that folder. Pick another one.")
+            show("Breaklog can't use that folder. Pick another one.")
             return@work
         }
         if (found != null) local.update { it.copy(folderWithBackup = found) } else reportBackup()
@@ -77,7 +77,7 @@ class BackupViewModel(application: Application) : AndroidViewModel(application) 
     fun pickBackupFile(uri: Uri) = work {
         val picked = backup.inspect(uri)
         if (picked == null) {
-            show("That file isn't a Cypher backup, or it's from a newer version of the app.")
+            show("That file isn't a Breaklog backup, or it's from a newer version of the app.")
         } else {
             local.update { it.copy(picked = picked) }
         }
